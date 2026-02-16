@@ -6,4 +6,4 @@ gunicorn
 requests
 psycopg2-binary
 python-dotenv
-8233118a2d865dc765f5c47c0384de452a1f8167
+
