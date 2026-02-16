@@ -24,3 +24,6 @@ def create_alert(product: str, site: str, alert_type: str, db: Session = Depends
 def dashboard(db: Session = Depends(get_db)):
     alerts = db.query(PriceAlert).all()
     return {"alerts": alerts, "forecasts": "forecast data here"}
+@app.get("/")
+def read_root():
+    return {"message": "Hello from FastAPI on Heroku!"}
