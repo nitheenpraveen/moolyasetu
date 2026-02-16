@@ -1,19 +1,5 @@
-from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-DATABASE_URL = "sqlite:///./test.db"  # Replace with Postgres later
-
-Base = declarative_base()
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+from sqlalchemy import Column, Integer, String, Text
+from database import Base
 
 class PriceAlert(Base):
     __tablename__ = "price_alerts"
@@ -29,3 +15,10 @@ class ProductComparison(Base):
     product = Column(String)
     site = Column(String)
     price = Column(String)
+
+class ContactMessage(Base):
+    __tablename__ = "contact_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    email = Column(String(200))
+    message = Column(Text)
