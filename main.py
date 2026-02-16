@@ -7,7 +7,6 @@ app = FastAPI()
 @app.get("/compare")
 def compare_products(product: str, db: Session = Depends(get_db)):
     # Placeholder for Amazon/eBay/Flipkart API calls
-8233118a2d865dc765f5c47c0384de452a1f8167
     return {"product": product, "prices": "API data here"}
 
 @app.get("/alerts")
@@ -29,4 +28,3 @@ def dashboard(db: Session = Depends(get_db)):
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI on Heroku!"}
-8233118a2d865dc765f5c47c0384de452a1f8167
