@@ -1,26 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from models import ProductComparison, PriceAlert, ContactMessage
-from database import get_db
-from auth import create_access_token, verify_token, verify_password, ADMIN_USERNAME, ADMIN_PASSWORD_HASH
+from models import ProductComparison, PriceAlert, get_db
 
 app = FastAPI()
 
-@app.post("/token")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    if form_data.username == ADMIN_USERNAME and verify_password(form_data.password, ADMIN_PASSWORD_HASH):
-        access_token = create_access_token(data={"sub": form_data.username})
-        return {"access_token": access_token, "token_type": "bearer"}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-
-@app.get("/admin/messages")
-def get_messages(db: Session = Depends(get_db), token: dict = Depends(verify_token)):
-    return db.query(ContactMessage).all()
-
-# Your existing endpoints remain unchanged
 @app.get("/compare")
 def compare_products(product: str, db: Session = Depends(get_db)):
+    # Placeholder for Amazon/eBay/Flipkart API calls
+8233118a2d865dc765f5c47c0384de452a1f8167
     return {"product": product, "prices": "API data here"}
 
 @app.get("/alerts")
@@ -42,3 +29,4 @@ def dashboard(db: Session = Depends(get_db)):
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI on Heroku!"}
+8233118a2d865dc765f5c47c0384de452a1f8167
