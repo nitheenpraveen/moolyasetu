@@ -1,12 +1,12 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from models import ProductComparison, PriceAlert, get_db
+from fastapi import FastAPI, Depends 
+from sqlalchemy.orm import Session 
+from .models import ProductComparison, PriceAlert 
+from .database import get_db
 
 app = FastAPI()
 
 @app.get("/compare")
 def compare_products(product: str, db: Session = Depends(get_db)):
-    # Placeholder for Amazon/eBay/Flipkart API calls
     return {"product": product, "prices": "API data here"}
 
 @app.get("/alerts")
