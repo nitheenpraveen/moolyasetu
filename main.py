@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-ffrom models import ProductComparison, PriceAlert, ContactMessage
+from models import ProductComparison, PriceAlert, ContactMessage
 from database import get_db
 from auth import create_access_token, verify_token, verify_password, ADMIN_USERNAME, ADMIN_PASSWORD_HASH
 
