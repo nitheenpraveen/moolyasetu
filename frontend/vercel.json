@@ -1,5 +1,5 @@
 {
   "builds": [
-    { "src": "package.json", "use": "@vercel/node" }
+    { "src": "frontend/package.json", "use": "@vercel/next" }
   ]
 }
