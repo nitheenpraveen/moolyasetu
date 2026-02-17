@@ -4,12 +4,22 @@ import { useState } from "react";
 export default function ComparePage() {
   const [product, setProduct] = useState("");
   const [results, setResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function fetchComparison() {
     if (!product) return;
-    const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
-    const data = await res.json();
-    setResults(data);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
+      const data = await res.json();
+      setResults(data);
+    } catch (err) {
+      setError("Failed to fetch comparison results.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -32,6 +42,9 @@ export default function ComparePage() {
           Compare
         </button>
       </div>
+
+      {loading && <p className="text-center text-gray-600">Fetching results...</p>}
+      {error && <p className="text-center text-red-600">{error}</p>}
 
       {results && (
         <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
