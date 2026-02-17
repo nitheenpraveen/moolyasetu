@@ -1,34 +1,22 @@
 #!/bin/bash
+set -e
 
-# Fetch latest from GitHub
-git fetch origin
+echo "🔄 Syncing local → GitHub, Heroku, Vercel..."
 
-echo "🔍 Checking differences between local and GitHub..."
+# --- GitHub Sync (SSH, force overwrite) ---
+git add .
+git commit -m "Auto-sync: $(date)" || echo "No changes to commit"
+git push origin main --force
 
-# Check if local has commits not on GitHub
-LOCAL_DIFF=$(git log --oneline origin/main..main)
+# --- Heroku Deploy ---
+cd backend
+heroku git:remote -a moolyasetu-b1120af93c94
+git push heroku main --force
+cd ..
 
-# Check if GitHub has commits not on local
-REMOTE_DIFF=$(git log --oneline main..origin/main)
+# --- Vercel Deploy ---
+cd frontend
+vercel --prod --confirm
+cd ..
 
-if [ -z "$LOCAL_DIFF" ] && [ -z "$REMOTE_DIFF" ]; then
-  echo "✅ Local and GitHub are identical."
-else
-  echo "⚠️ Differences found!"
-
-  if [ -n "$LOCAL_DIFF" ]; then
-    echo "👉 Local commits not pushed to GitHub:"
-    echo "$LOCAL_DIFF"
-    echo "📤 Pushing local changes to GitHub..."
-    git push origin main
-  fi
-
-  if [ -n "$REMOTE_DIFF" ]; then
-    echo "👉 GitHub commits not pulled locally:"
-    echo "$REMOTE_DIFF"
-    echo "📥 Pulling changes from GitHub..."
-    git pull origin main
-  fi
-fi
-
-echo "✅ Local and GitHub are now synchronized."
+echo "✅ Sync complete: Local, GitHub, Heroku, Vercel are now equal."
