@@ -50,15 +50,39 @@ export default function ComparePage() {
         <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
           <h2 className="text-2xl font-bold text-green-600 mb-4">Best Option</h2>
           <p className="text-lg">
-            {results.best_option.site} — {results.best_option.price}
+            <span className="font-semibold">{results.best_option?.site}</span> —{" "}
+            {results.best_option?.price}
           </p>
+          {results.best_option?.link && (
+            <a
+              href={results.best_option.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              View Product
+            </a>
+          )}
 
           <h2 className="text-2xl font-bold text-gray-700 mt-6 mb-4">All Results</h2>
           <ul className="divide-y divide-gray-200">
             {results.all_results.map((r: any, i: number) => (
-              <li key={i} className="py-2 flex justify-between">
-                <span className="font-medium">{r.site}</span>
-                <span>{r.price || r.error}</span>
+              <li key={i} className="py-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">{r.site}</span>
+                  <span>{r.price || r.error}</span>
+                </div>
+                {r.title && <p className="text-sm text-gray-600">{r.title}</p>}
+                {r.link && (
+                  <a
+                    href={r.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    View Product
+                  </a>
+                )}
               </li>
             ))}
           </ul>
