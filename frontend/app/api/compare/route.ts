@@ -37,19 +37,31 @@ export async function GET(req: Request) {
     try {
       const res = await fetch(source.url, { headers: source.headers });
       const data = await res.json();
-      results.push({ site: source.site, price: data?.price || "N/A" });
+
+      // Debug: log the full response so you can inspect structure
+      console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
+
+      // Try to extract first product details
+      const firstProduct = data.products?.[0] || data[0]; // fallback if API returns array
+      results.push({
+        site: source.site,
+        title: firstProduct?.title || "No product found",
+        price: firstProduct?.price || "N/A",
+        link: firstProduct?.link || "#",
+      });
     } catch (err) {
+      console.error(`${source.site} error:`, err);
       results.push({ site: source.site, error: "Not available" });
     }
   }
 
+  // Pick best option by lowest numeric price
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
-    if (!best.price || parseInt(curr.price.replace(/\D/g, "")) < parseInt(best.price.replace(/\D/g, ""))) {
-      return curr;
-    }
-    return best;
-  }, {});
+    const currPrice = parseInt(curr.price.replace(/\D/g, ""));
+    const bestPrice = parseInt(best?.price?.replace(/\D/g, "")) || Infinity;
+    return currPrice < bestPrice ? curr : best;
+  }, null);
 
   return NextResponse.json({ best_option, all_results: results });
 }
