@@ -29,6 +29,30 @@ export async function GET(req: Request) {
         "X-RapidAPI-Host": "croma-api.p.rapidapi.com",
       },
     },
+    {
+      site: "Reliance Digital",
+      url: `https://reliance-digital-api.p.rapidapi.com/search?query=${product}`,
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
+        "X-RapidAPI-Host": "reliance-digital-api.p.rapidapi.com",
+      },
+    },
+    {
+      site: "TataCliq",
+      url: `https://tatacliq-api.p.rapidapi.com/search?query=${product}`,
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
+        "X-RapidAPI-Host": "tatacliq-api.p.rapidapi.com",
+      },
+    },
+    {
+      site: "Myntra",
+      url: `https://myntra-api.p.rapidapi.com/search?query=${product}`,
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
+        "X-RapidAPI-Host": "myntra-api.p.rapidapi.com",
+      },
+    },
   ];
 
   const results: any[] = [];
@@ -38,16 +62,17 @@ export async function GET(req: Request) {
       const res = await fetch(source.url, { headers: source.headers });
       const data = await res.json();
 
-      // Debug: log the full response so you can inspect structure
       console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
 
-      // Try to extract first product details
-      const firstProduct = data.products?.[0] || data[0]; // fallback if API returns array
+      const firstProduct = data.products?.[0] || data.results?.[0] || data[0];
+
       results.push({
         site: source.site,
-        title: firstProduct?.title || "No product found",
+        title: firstProduct?.title || firstProduct?.name || "No product found",
         price: firstProduct?.price || "N/A",
-        link: firstProduct?.link || "#",
+        rating: firstProduct?.rating || "N/A",
+        reviews: firstProduct?.reviews || "N/A",
+        link: firstProduct?.link || firstProduct?.url || "#",
       });
     } catch (err) {
       console.error(`${source.site} error:`, err);
@@ -55,12 +80,21 @@ export async function GET(req: Request) {
     }
   }
 
-  // Pick best option by lowest numeric price
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
-    const currPrice = parseInt(curr.price.replace(/\D/g, ""));
+    const currPrice = parseInt(curr.price.replace(/\D/g, "")) || Infinity;
     const bestPrice = parseInt(best?.price?.replace(/\D/g, "")) || Infinity;
-    return currPrice < bestPrice ? curr : best;
+
+    const currRating = parseFloat(curr.rating) || 0;
+    const bestRating = parseFloat(best?.rating) || 0;
+
+    if (
+      currPrice < bestPrice ||
+      (currPrice === bestPrice && currRating > bestRating)
+    ) {
+      return curr;
+    }
+    return best;
   }, null);
 
   return NextResponse.json({ best_option, all_results: results });
