@@ -26,7 +26,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${robotoMono.variable} antialiased`}>
         <Navbar />
-        <div className="container mx-auto">{children}</div>
+        <main className="container mx-auto py-6">{children}</main>
         <Footer />
       </body>
     </html>
