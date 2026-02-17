@@ -1,46 +1,44 @@
 "use client";
 import { useState } from "react";
 
-export default function Compare() {
+export default function ComparePage() {
   const [product, setProduct] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [results, setResults] = useState<any>(null);
 
-  const handleCompare = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/compare?product=${encodeURIComponent(product)}`
-      );
-      const data = await res.json();
-      setResult(data);
-    } catch (err) {
-      console.error(err);
-      alert("Error fetching comparison data");
-    }
-  };
+  async function fetchComparison() {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE}/compare?product=${product}`
+    );
+    const data = await res.json();
+    setResults(data);
+  }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold mb-6">Compare Products</h1>
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Enter product name"
-          value={product}
-          onChange={(e) => setProduct(e.target.value)}
-          className="border p-2 rounded w-64"
-        />
-        <button
-          onClick={handleCompare}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Compare
-        </button>
-      </div>
-      {result && (
-        <div className="bg-gray-100 p-4 rounded shadow">
-          <pre>{JSON.stringify(result, null, 2)}</pre>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Product Comparison</h1>
+      <input
+        type="text"
+        value={product}
+        onChange={(e) => setProduct(e.target.value)}
+        placeholder="Enter product name"
+        className="border p-2 mr-2"
+      />
+      <button
+        onClick={fetchComparison}
+        className="bg-blue-500 text-white px-4 py-2"
+      >
+        Compare
+      </button>
+
+      {results && (
+        <div className="mt-4">
+          <h2 className="text-xl">Best Option</h2>
+          <pre>{JSON.stringify(results.best_option, null, 2)}</pre>
+
+          <h2 className="text-xl mt-4">All Results</h2>
+          <pre>{JSON.stringify(results.all_results, null, 2)}</pre>
         </div>
       )}
-    </main>
+    </div>
   );
 }

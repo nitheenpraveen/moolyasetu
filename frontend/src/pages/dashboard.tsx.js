@@ -1,7 +1,6 @@
-"use client";
 import { useState, useEffect } from "react";
 
-export default function DashboardPage() {
+export default function Dashboard() {
   const [dashboard, setDashboard] = useState<any>(null);
 
   async function fetchDashboard() {

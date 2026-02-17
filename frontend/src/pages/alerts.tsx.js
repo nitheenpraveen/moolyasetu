@@ -1,7 +1,6 @@
-"use client";
 import { useState, useEffect } from "react";
 
-export default function AlertsPage() {
+export default function Alerts() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [product, setProduct] = useState("");
   const [site, setSite] = useState("");

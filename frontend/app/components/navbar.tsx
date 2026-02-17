@@ -3,13 +3,20 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow">
-      <h1 className="text-xl font-bold">MoolyaSetu</h1>
+    <nav className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between">
+      <div className="text-xl font-bold">
+        <Link href="/">MoolyaSetu</Link>
+      </div>
       <div className="space-x-6">
-        <Link href="/" className="hover:underline">Home</Link>
-        <Link href="/compare" className="hover:underline">Compare</Link>
-        <Link href="/alerts" className="hover:underline">Alerts</Link>
-        <Link href="/dashboard" className="hover:underline">Dashboard</Link>
+        <Link href="/compare" className="hover:text-blue-400">
+          Compare
+        </Link>
+        <Link href="/alerts" className="hover:text-blue-400">
+          Alerts
+        </Link>
+        <Link href="/dashboard" className="hover:text-blue-400">
+          Dashboard
+        </Link>
       </div>
     </nav>
   );
