@@ -6,7 +6,6 @@ export default function Home() {
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-pink-300 rounded-full opacity-40 blur-3xl animate-blob animation-delay-2000"></div>
       <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-blue-300 rounded-full opacity-30 blur-2xl animate-blob animation-delay-4000"></div>
 
-      {/* Content */}
       <div className="relative z-10 text-center max-w-3xl">
         <h1 className="text-6xl font-extrabold text-blue-800 mb-6 animate-fadeIn">
           MoolyaSetu
@@ -51,7 +50,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Animations */}
       <style jsx>{`
         @keyframes blob {
           0%,100%{transform:translate(0,0) scale(1);}
@@ -61,6 +59,7 @@ export default function Home() {
         .animate-blob { animation: blob 8s infinite; }
         .animation-delay-2000 { animation-delay: 2s; }
         .animation-delay-4000 { animation-delay: 4s; }
+
         @keyframes fadeIn { 0%{opacity:0;transform:translateY(20px);}100%{opacity:1;transform:translateY(0);} }
         .animate-fadeIn { animation: fadeIn 1s forwards; }
         .animate-fadeIn.delay-200 { animation-delay: 0.2s; }
