@@ -1,9 +1,19 @@
 "use client";
 import { useState } from "react";
 
+interface Product {
+  site: string;
+  title: string;
+  price: string;
+  rating: string;
+  reviews: string;
+  link: string;
+}
+
 export default function ComparePage() {
   const [product, setProduct] = useState("");
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Product[]>([]);
+  const [bestOption, setBestOption] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -11,11 +21,46 @@ export default function ComparePage() {
     if (!product) return;
     setLoading(true);
     setError("");
+    setResults([]);
+    setBestOption(null);
+
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
-      setResults(data);
+
+      // Extract top 3 products from eBay
+      const ebayResults: Product[] = [];
+      const itemSummaries = data.all_results?.[0]?.itemSummaries || [];
+      for (let i = 0; i < Math.min(itemSummaries.length, 3); i++) {
+        const item = itemSummaries[i];
+        ebayResults.push({
+          site: "eBay",
+          title: item.title,
+          price: item.price?.value || "N/A",
+          rating: item.rating || "N/A",
+          reviews: item.reviewCount || "N/A",
+          link: item.itemWebUrl,
+        });
+      }
+
+      setResults(ebayResults);
+
+      // Determine best option: lowest price + highest rating
+      const best = ebayResults.reduce((best, curr) => {
+        const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
+        const bestPrice = parseFloat(best?.price.replace(/[^0-9.]/g, "")) || Infinity;
+        const currRating = parseFloat(curr.rating) || 0;
+        const bestRating = parseFloat(best?.rating) || 0;
+
+        if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
+          return curr;
+        }
+        return best;
+      }, ebayResults[0] || null);
+
+      setBestOption(best || null);
     } catch (err) {
+      console.error(err);
       setError("Failed to fetch comparison results.");
     } finally {
       setLoading(false);
@@ -28,7 +73,7 @@ export default function ComparePage() {
         Product Comparison
       </h1>
 
-      {/* Search bar */}
+      {/* Search Bar */}
       <div className="flex justify-center mb-6 flex-wrap gap-2">
         <input
           type="text"
@@ -49,68 +94,52 @@ export default function ComparePage() {
       {loading && <p className="text-center text-gray-600">Fetching results...</p>}
       {error && <p className="text-center text-red-600">{error}</p>}
 
-      {/* Results */}
-      {results && (
-        <div className="max-w-3xl mx-auto space-y-6">
-          {/* Best Option */}
-          {results.best_option && (
-            <div className="bg-green-100 border border-green-300 rounded-lg p-4 shadow-md">
-              <h2 className="text-2xl font-bold text-green-700 mb-2">Best Option</h2>
-              <p className="font-semibold">{results.best_option.title}</p>
-              <p className="text-lg text-green-800">Price: {results.best_option.price}</p>
-              {results.best_option.rating && (
-                <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
-              )}
-              {results.best_option.reviews && (
-                <p className="text-gray-600">{results.best_option.reviews} reviews</p>
-              )}
-              {results.best_option.link && (
+      {/* Best Option */}
+      {bestOption && (
+        <div className="max-w-3xl mx-auto mb-6 p-4 bg-green-100 border border-green-300 rounded shadow-md">
+          <h2 className="text-2xl font-bold text-green-700 mb-2">Best Option</h2>
+          <p className="font-semibold">{bestOption.title}</p>
+          <p className="text-lg text-green-800">Price: {bestOption.price}</p>
+          {bestOption.rating && <p className="text-yellow-600">Rating: {bestOption.rating} ⭐</p>}
+          {bestOption.reviews && <p className="text-gray-600">{bestOption.reviews} reviews</p>}
+          <a
+            href={bestOption.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            View Product
+          </a>
+        </div>
+      )}
+
+      {/* All Results */}
+      {results.length > 0 && (
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">Top Products</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {results.map((r, idx) => (
+              <div
+                key={idx}
+                className={`border rounded-lg p-4 shadow-sm ${
+                  r === bestOption ? "border-green-500" : "border-gray-200"
+                }`}
+              >
+                <p className="font-semibold">{r.site}</p>
+                <p className="text-gray-700">{r.title}</p>
+                <p className="text-gray-900 font-bold">{r.price}</p>
+                {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
+                {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
                 <a
-                  href={results.best_option.link}
+                  href={r.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 hover:underline text-sm"
                 >
                   View Product
                 </a>
-              )}
-            </div>
-          )}
-
-          {/* All Results */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-700">All Results</h2>
-            {Array.isArray(results.all_results) && results.all_results.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-4">
-                {results.all_results.map((r: any, i: number) => (
-                  <div
-                    key={i}
-                    className={`border rounded-lg p-4 shadow-sm ${
-                      r === results.best_option ? "border-green-500" : "border-gray-200"
-                    }`}
-                  >
-                    <p className="font-semibold">{r.site}</p>
-                    {r.title && <p className="text-gray-700">{r.title}</p>}
-                    {r.price && <p className="text-gray-900 font-bold">{r.price}</p>}
-                    {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
-                    {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
-                    {r.link && (
-                      <a
-                        href={r.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
-                      >
-                        View Product
-                      </a>
-                    )}
-                    {r.error && <p className="text-red-500">{r.error}</p>}
-                  </div>
-                ))}
               </div>
-            ) : (
-              <p className="text-gray-500">No results found.</p>
-            )}
+            ))}
           </div>
         </div>
       )}
