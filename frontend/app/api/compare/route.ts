@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const product = searchParams.get("product") || "";
+  console.log("SCRAPER:", process.env.SCRAPER_API_KEY);
+console.log("RAPID:", process.env.RAPIDAPI_KEY);
+console.log("EBAY:", process.env.EBAY_OAUTH_TOKEN);
 
   const sources = [
     {
