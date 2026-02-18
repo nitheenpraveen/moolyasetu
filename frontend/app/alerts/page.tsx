@@ -3,37 +3,66 @@ import { useState } from "react";
 
 export default function AlertsPage() {
   const [email, setEmail] = useState("");
-  const [alertProduct, setAlertProduct] = useState("");
+  const [product, setProduct] = useState("");
+  const [alerts, setAlerts] = useState<{ product: string; email: string }[]>([]);
   const [message, setMessage] = useState("");
 
-  function handleCreateAlert() {
-    if (!email || !alertProduct) {
-      setMessage("Please enter both email and product name.");
+  function addAlert() {
+    if (!product || !email) {
+      setMessage("Please enter both product and email.");
       return;
     }
-    setMessage(`Alert created for ${alertProduct} (${email})`);
+    setAlerts([...alerts, { product, email }]);
+    setMessage("Alert added successfully!");
+    setProduct("");
     setEmail("");
-    setAlertProduct("");
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 via-yellow-100 to-pink-100 p-8">
-      <h1 className="text-4xl font-bold text-green-600 mb-6 text-center">Manage Alerts</h1>
-      <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 space-y-4">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Your email"
-          className="border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-        />
+    <div className="min-h-screen bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 p-8">
+      <h1 className="text-4xl font-extrabold text-center text-purple-600 mb-8">
+        Manage Alerts
+      </h1>
+      <div className="max-w-md mx-auto mb-6">
         <input
           type="text"
-          value={alertProduct}
-          onChange={(e) => setAlertProduct(e.target.value)}
-          placeholder="Product to watch"
-          className="border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+          placeholder="Product name..."
+          value={product}
+          onChange={(e) => setProduct(e.target.value)}
+          className="border rounded-l-lg p-3 w-1/2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+        />
+        <input
+          type="email"
+          placeholder="Your email..."
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="border p-3 w-1/2 focus:outline-none focus:ring-2 focus:ring-purple-400"
         />
         <button
-          onClick={handleCreateAlert}
-          className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition w-
+          onClick={addAlert}
+          className="bg-purple-600 text-white px-4 py-3 rounded-r-lg hover:bg-purple-700 transition ml-2"
+        >
+          Add Alert
+        </button>
+      </div>
+
+      {message && (
+        <p className="text-center text-green-600 font-medium mb-4">{message}</p>
+      )}
+
+      {alerts.length > 0 && (
+        <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">Your Alerts</h2>
+          <ul className="divide-y divide-gray-200">
+            {alerts.map((a, i) => (
+              <li key={i} className="py-2 flex justify-between items-center">
+                <span>{a.product}</span>
+                <span className="text-gray-500">{a.email}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
