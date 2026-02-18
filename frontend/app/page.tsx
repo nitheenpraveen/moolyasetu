@@ -1,52 +1,98 @@
 "use client";
-import Link from "next/link";
+import { useState } from "react";
 
-export default function Home() {
+export default function NirnayaPage() {
+  const [product, setProduct] = useState("");
+  const [results, setResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function fetchComparison() {
+    if (!product) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
+      const data = await res.json();
+      setResults(data);
+    } catch {
+      setError("Failed to fetch results.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
+    <div className="min-h-screen p-8 relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50">
       
-      {/* Background Gradients & Shapes */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-0 w-72 h-72 bg-blue-300 opacity-30 rounded-full animate-bounce-slow"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-300 opacity-20 rounded-full animate-spin-slow"></div>
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-purple-200 opacity-25 rounded-full animate-bounce-slow"></div>
-      </div>
-
-      {/* Logo / Site Name */}
-      <h1 className="text-6xl font-extrabold text-purple-700 mb-6 text-center animate-fade-in">
-        MoolyaSetu
+      {/* Title */}
+      <h1 className="text-5xl font-extrabold text-center text-purple-700 mb-8 animate-fade-in">
+        Nirṇaya
       </h1>
 
-      {/* Tagline */}
-      <p className="text-lg text-gray-700 mb-10 text-center max-w-xl animate-fade-in delay-200">
-        Smart shopping alerts and Nirṇaya product comparisons. Track prices, reviews, ratings, and discover the best deals across eBay.
-      </p>
-
-      {/* Navigation Buttons */}
-      <div className="flex flex-wrap gap-6 justify-center animate-fade-in delay-400">
-        <Link
-          href="/compare"
-          className="bg-purple-600 text-white px-8 py-4 rounded-lg shadow-lg hover:bg-purple-700 transition transform hover:-translate-y-1 hover:scale-105"
+      {/* Search Bar */}
+      <div className="flex justify-center mb-6 animate-fade-in delay-200">
+        <input
+          type="text"
+          value={product}
+          onChange={(e) => setProduct(e.target.value)}
+          placeholder="Enter product name..."
+          className="border rounded-l-lg p-3 w-80 focus:outline-none focus:ring-2 focus:ring-purple-400"
+        />
+        <button
+          onClick={fetchComparison}
+          className="bg-purple-600 text-white px-6 py-3 rounded-r-lg btn"
         >
-          Nirṇaya (Compare Products)
-        </Link>
-        <Link
-          href="/alerts"
-          className="bg-green-600 text-white px-8 py-4 rounded-lg shadow-lg hover:bg-green-700 transition transform hover:-translate-y-1 hover:scale-105"
-        >
-          Manage Alerts
-        </Link>
-        <Link
-          href="/dashboard"
-          className="bg-blue-600 text-white px-8 py-4 rounded-lg shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1 hover:scale-105"
-        >
-          Dashboard
-        </Link>
+          Compare
+        </button>
       </div>
 
-      {/* Footer Shapes */}
-      <div className="absolute bottom-0 left-0 w-60 h-60 bg-yellow-200 opacity-20 rounded-full animate-bounce-slow"></div>
-      <div className="absolute bottom-10 right-10 w-48 h-48 bg-purple-300 opacity-15 rounded-full animate-spin-slow"></div>
-    </main>
+      {/* Loading & Error */}
+      {loading && <p className="text-center text-gray-600 animate-fade-in delay-400">Fetching results...</p>}
+      {error && <p className="text-center text-red-600 animate-fade-in delay-400">{error}</p>}
+
+      {/* Results */}
+      {results && (
+        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-lg p-6 animate-fade-in delay-400">
+
+          {/* Best Option */}
+          {results.best_option && (
+            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
+              <h2 className="text-2xl font-bold text-green-700 mb-2">Best Deal</h2>
+              <p className="font-semibold">{results.best_option.site} — {results.best_option.price}</p>
+              {results.best_option.rating && <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>}
+              {results.best_option.reviews && <p className="text-gray-500">{results.best_option.reviews} reviews</p>}
+              {results.best_option.link && (
+                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  View Product
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* All Results */}
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">All Results</h2>
+          <ul className="divide-y divide-gray-200">
+            {Array.isArray(results.all_results) &&
+              results.all_results.map((r: any, i: number) => (
+                <li key={i} className="py-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium">{r.site}</span>
+                    <span>{r.price || r.error}</span>
+                  </div>
+                  {r.title && <p className="text-gray-600">{r.title}</p>}
+                  {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
+                  {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
+                  {r.link && (
+                    <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      View Product
+                    </a>
+                  )}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
