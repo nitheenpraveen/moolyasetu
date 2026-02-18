@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colors and fonts */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -14,6 +15,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Dark mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -21,8 +23,21 @@
   }
 }
 
+/* Global gradient animation */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 15s ease infinite;
+}
+
+/* Base body styles */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background 0.3s, color 0.3s;
 }
