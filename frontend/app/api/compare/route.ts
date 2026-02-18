@@ -49,6 +49,7 @@ export async function GET(req: Request) {
 
   for (const source of sources) {
     try {
+      // Clean headers to avoid undefined values
       const headers: Record<string, string> = {};
       if (source.headers) {
         for (const [key, value] of Object.entries(source.headers)) {
@@ -65,6 +66,7 @@ export async function GET(req: Request) {
       const data = await res.json();
       console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
 
+      // Flipkart CPL API
       if (source.site === "Flipkart") {
         results.push({
           site: source.site,
@@ -72,13 +74,14 @@ export async function GET(req: Request) {
           price: data.price || "N/A",
           rating: data.rating || "N/A",
           reviews: data.value || "N/A",
-          link: source.body.replace("Name=", "") || "#",
+          link: source.body ? source.body.replace("Name=", "") : "#",
           warranty: data.warranty || "N/A",
           cpl: data.CPL || "N/A",
         });
         continue;
       }
 
+      // eBay Browse API
       if (source.site === "eBay") {
         const firstItem = data.itemSummaries?.[0] || null;
         results.push({
@@ -92,6 +95,7 @@ export async function GET(req: Request) {
         continue;
       }
 
+      // Generic parsing for Amazon, Reliance, TataCliq
       const firstProduct =
         data.products?.[0] ||
         data.results?.[0] ||
@@ -129,6 +133,7 @@ export async function GET(req: Request) {
     }
   }
 
+  // Best option logic
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
     const currPrice = parseInt(curr.price.replace(/\D/g, "")) || Infinity;
