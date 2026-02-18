@@ -24,9 +24,6 @@ export default function ComparePage() {
 
   return (
     <div className="min-h-screen p-8 relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50">
-      {/* Animated Gradient Overlay */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-purple-400 via-pink-400 to-yellow-300 animate-gradient-x opacity-30" />
-
       <h1 className="text-4xl font-extrabold text-center text-blue-700 mb-8">
         Product Comparison
       </h1>
@@ -54,7 +51,7 @@ export default function ComparePage() {
 
       {/* Results */}
       {results && (
-        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-lg p-6 relative z-10">
+        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-lg p-6">
           {/* Best Option */}
           {results.best_option && (
             <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
