@@ -11,13 +11,27 @@ type ProductResult = {
 };
 
 export async function GET(req: Request) {
+  console.log("SCRAPER:", process.env.SCRAPER_API_KEY);
+  console.log("RAPID:", process.env.RAPIDAPI_KEY);
+  console.log("EBAY:", process.env.EBAY_OAUTH_TOKEN);
+
   const { searchParams } = new URL(req.url);
-  const product = searchParams.get("product") || "";
+  const product = searchParams.get("product")?.trim() || "";
+
+  if (!product) {
+    return NextResponse.json({
+      best_option: null,
+      all_results: [],
+      message: "No product specified",
+    });
+  }
 
   const sources = [
     {
       site: "Amazon India",
-      url: `https://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=https://www.amazon.in/s?k=${product}`,
+      url: `https://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=https://www.amazon.in/s?k=${encodeURIComponent(
+        product
+      )}`,
     },
     {
       site: "Flipkart",
@@ -28,13 +42,35 @@ export async function GET(req: Request) {
         "X-RapidAPI-Host": "flipkart-cost-per-lifetime.p.rapidapi.com",
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: `Name=https://www.flipkart.com/search?q=${product}`,
+      body: `Name=https://www.flipkart.com/search?q=${encodeURIComponent(product)}`,
     },
     {
       site: "eBay",
-      url: `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${product}`,
+      url: `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+        product
+      )}`,
       headers: {
         Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
+      },
+    },
+    {
+      site: "Reliance Digital",
+      url: `https://reliance-digital-api.p.rapidapi.com/search?query=${encodeURIComponent(
+        product
+      )}`,
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+        "X-RapidAPI-Host": "reliance-digital-api.p.rapidapi.com",
+      },
+    },
+    {
+      site: "TataCliq",
+      url: `https://tatacliq-api.p.rapidapi.com/search?query=${encodeURIComponent(
+        product
+      )}`,
+      headers: {
+        "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+        "X-RapidAPI-Host": "tatacliq-api.p.rapidapi.com",
       },
     },
   ];
@@ -56,43 +92,77 @@ export async function GET(req: Request) {
         body: source.method === "POST" ? source.body : undefined,
       });
 
-      // Some APIs might return HTML instead of JSON (Amazon), handle gracefully
       let data: any;
       try {
         data = await res.json();
       } catch {
-        results.push({ site: source.site, error: "Data not available" });
-        continue;
+        // fallback if response is not JSON
+        data = null;
       }
 
-      // eBay
+      console.log(`${source.site} response:`, JSON.stringify(data || {}, null, 2));
+
+      // eBay API
       if (source.site === "eBay") {
-        const firstItem = data.itemSummaries?.[0] || null;
+        const firstItem = data?.itemSummaries?.[0] || null;
         results.push({
           site: source.site,
           title: firstItem?.title || "No product found",
           price: firstItem?.price?.value || "N/A",
           rating: firstItem?.rating || "N/A",
-          reviews: firstItem?.reviewCount || "N/A",
+          reviews: firstItem?.reviewCount?.toString() || "N/A",
           link: firstItem?.itemWebUrl || "#",
         });
         continue;
       }
 
-      // Flipkart
+      // Flipkart CPL API
       if (source.site === "Flipkart") {
         results.push({
           site: source.site,
-          title: data.title || "No product found",
-          price: data.price || "N/A",
-          rating: data.rating || "N/A",
-          reviews: data.value || "N/A",
+          title: data?.title || "No product found",
+          price: data?.price || "N/A",
+          rating: data?.rating || "N/A",
+          reviews: data?.value || "N/A",
           link: source.body ? source.body.replace("Name=", "") : "#",
         });
         continue;
       }
 
-      // Generic placeholder for Amazon
+      // Generic fallback for Amazon, Reliance, TataCliq
+      const firstProduct =
+        data?.products?.[0] ||
+        data?.results?.[0] ||
+        data?.[0] ||
+        null;
+
+      results.push({
+        site: source.site,
+        title:
+          firstProduct?.title ||
+          firstProduct?.product_title ||
+          firstProduct?.name ||
+          "No product found",
+        price:
+          firstProduct?.price ||
+          firstProduct?.product_price ||
+          "N/A",
+        rating:
+          firstProduct?.rating ||
+          firstProduct?.product_rating ||
+          "N/A",
+        reviews:
+          firstProduct?.reviews ||
+          firstProduct?.product_reviews ||
+          "N/A",
+        link:
+          firstProduct?.link ||
+          firstProduct?.product_link ||
+          firstProduct?.url ||
+          "#",
+      });
+    } catch (err) {
+      console.error(`${source.site} error:`, err);
       results.push({
         site: source.site,
         title: "No product found",
@@ -100,20 +170,20 @@ export async function GET(req: Request) {
         rating: "N/A",
         reviews: "N/A",
         link: "#",
+        error: "Not available",
       });
-    } catch (err) {
-      results.push({ site: source.site, error: "Not available" });
     }
   }
 
-  // Determine best option safely
+  // Determine best option
   const best_option = results.reduce<ProductResult | null>((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
-    const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-    const bestPrice = best ? parseFloat(best.price?.replace(/[^0-9.]/g, "")) || Infinity : Infinity;
 
-    const currRating = parseFloat(curr.rating || "0") || 0;
-    const bestRating = best ? parseFloat(best.rating || "0") || 0 : 0;
+    const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
+    const bestPrice = parseFloat(best?.price?.replace(/[^0-9.]/g, "")) || Infinity;
+
+    const currRating = parseFloat(curr.rating) || 0;
+    const bestRating = parseFloat(best?.rating) || 0;
 
     if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
       return curr;
