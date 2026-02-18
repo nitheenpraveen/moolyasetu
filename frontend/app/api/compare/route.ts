@@ -61,10 +61,11 @@ export async function GET(req: Request) {
     // Determine best option: lowest price first, then highest rating
     const best_option = results.reduce<ProductResult | null>((best, curr) => {
       if (!curr.price || curr.price === "N/A") return best;
-      const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-      const bestPrice = parseFloat(best?.price?.replace(/[^0-9.]/g, "")) || Infinity;
-      const currRating = parseFloat(curr.rating) || 0;
-      const bestRating = parseFloat(best?.rating) || 0;
+      const currPrice = parseFloat(curr.price?.replace(/[^0-9.]/g, "") || "Infinity");
+const bestPrice = parseFloat(best?.price?.replace(/[^0-9.]/g, "") || "Infinity");
+
+const currRating = parseFloat(curr.rating || "0");
+const bestRating = parseFloat(best?.rating || "0");
 
       if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
         return curr;
