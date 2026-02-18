@@ -3,109 +3,117 @@ import { useState } from "react";
 
 export default function NirnayaPage() {
   const [product, setProduct] = useState("");
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<any[]>([]);
+  const [bestOption, setBestOption] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function fetchComparison() {
+  async function fetchNirnaya() {
     if (!product) return;
     setLoading(true);
     setError("");
-    setResults(null); // clear previous results
+    setResults([]);
+    setBestOption(null);
+
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
-      setResults(data);
-    } catch {
-      setError("Failed to fetch results.");
+
+      if (!data.all_results || data.all_results.length === 0) {
+        setError("No results found.");
+      } else {
+        setResults(data.all_results);
+        setBestOption(data.best_option);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch results. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen p-8 relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50">
-      
-      {/* Page Title */}
-      <h1 className="text-5xl font-extrabold text-center text-purple-700 mb-8 animate-fade-in">
+    <div className="min-h-screen p-8 relative overflow-hidden bg-gradient-to-br from-purple-200 via-pink-100 to-yellow-50 animate-gradient-x">
+      {/* Title & Description */}
+      <h1 className="text-5xl md:text-6xl font-extrabold text-center text-purple-700 mb-6">
         Nirṇaya
       </h1>
+      <p className="text-lg md:text-xl text-center text-gray-700 mb-10 max-w-2xl mx-auto">
+        Make smart shopping decisions instantly. Compare prices, ratings, and reviews across eBay products — all in one place.
+      </p>
 
       {/* Search Bar */}
-      <div className="flex justify-center mb-6 animate-fade-in delay-200">
+      <div className="flex flex-col md:flex-row justify-center items-center gap-4 mb-10">
         <input
           type="text"
           value={product}
           onChange={(e) => setProduct(e.target.value)}
           placeholder="Enter product name..."
-          className="border rounded-l-lg p-3 w-80 focus:outline-none focus:ring-2 focus:ring-purple-400"
+          className="border rounded-lg p-4 w-full md:w-96 focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-lg"
         />
         <button
-          onClick={fetchComparison}
-          className="bg-purple-600 text-white px-6 py-3 rounded-r-lg btn"
+          onClick={fetchNirnaya}
+          className="bg-purple-600 text-white px-8 py-4 rounded-lg shadow-lg hover:bg-purple-700 transition font-semibold"
         >
           Compare
         </button>
       </div>
 
-      {/* Loading Skeleton */}
-      {loading && (
-        <div className="max-w-3xl mx-auto space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="p-4 bg-white rounded-lg shadow animate-pulse">
-              <div className="h-6 bg-gray-300 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
+      {/* Loading & Error */}
+      {loading && <p className="text-center text-gray-600 text-lg animate-pulse">Fetching results...</p>}
+      {error && <p className="text-center text-red-600 text-lg">{error}</p>}
+
+      {/* Best Option */}
+      {bestOption && (
+        <div className="max-w-3xl mx-auto bg-green-50 shadow-2xl rounded-lg p-6 mb-10 border-l-8 border-green-500">
+          <h2 className="text-2xl font-bold text-green-700 mb-2">Best Choice</h2>
+          <p className="font-semibold">{bestOption.site} — {bestOption.price}</p>
+          {bestOption.rating && <p className="text-yellow-600">Rating: {bestOption.rating} ⭐</p>}
+          {bestOption.reviews && <p className="text-gray-500">{bestOption.reviews} reviews</p>}
+          <a
+            href={bestOption.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-700 font-semibold hover:underline mt-2 inline-block"
+          >
+            View Product on eBay
+          </a>
         </div>
       )}
 
-      {/* Error */}
-      {error && <p className="text-center text-red-600 animate-fade-in delay-400">{error}</p>}
-
-      {/* Results */}
-      {results && (
-        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-lg p-6 animate-fade-in delay-400">
-
-          {/* Best Option */}
-          {results.best_option && (
-            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
-              <h2 className="text-2xl font-bold text-green-700 mb-2">Best Deal</h2>
-              <p className="font-semibold">{results.best_option.site} — {results.best_option.price}</p>
-              {results.best_option.rating && <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>}
-              {results.best_option.reviews && <p className="text-gray-500">{results.best_option.reviews} reviews</p>}
-              {results.best_option.link && (
-                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  View Product
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">All Results</h2>
+      {/* All Results */}
+      {results.length > 0 && (
+        <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4 text-center">All Results</h2>
           <ul className="divide-y divide-gray-200">
-            {Array.isArray(results.all_results) &&
-              results.all_results.map((r: any, i: number) => (
-                <li key={i} className="py-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium">{r.site}</span>
-                    <span>{r.price || r.error}</span>
-                  </div>
-                  {r.title && <p className="text-gray-600">{r.title}</p>}
-                  {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
-                  {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
-                  {r.link && (
-                    <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      View Product
-                    </a>
-                  )}
-                </li>
-              ))}
+            {results.map((r, i) => (
+              <li key={i} className="py-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                  <span className="font-semibold text-gray-800">{r.title}</span>
+                  <span className="text-gray-700 font-medium">{r.price}</span>
+                </div>
+                <div className="flex flex-col md:flex-row gap-4 text-sm md:text-base text-gray-600 mb-1">
+                  {r.rating && <span>Rating: {r.rating} ⭐</span>}
+                  {r.reviews && <span>{r.reviews} reviews</span>}
+                </div>
+                <a
+                  href={r.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-600 hover:underline font-medium"
+                >
+                  View on eBay
+                </a>
+              </li>
+            ))}
           </ul>
         </div>
       )}
+
+      {/* Background Decorations */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
     </div>
   );
 }
