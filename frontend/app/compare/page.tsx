@@ -28,7 +28,6 @@ export default function ComparePage() {
         Product Comparison
       </h1>
 
-      {/* Search */}
       <div className="flex justify-center mb-8">
         <input
           type="text"
