@@ -23,7 +23,7 @@ export default function AlertsPage() {
       <h1 className="text-4xl font-extrabold text-center text-purple-600 mb-8">
         Manage Alerts
       </h1>
-      <div className="max-w-md mx-auto mb-6">
+      <div className="max-w-md mx-auto mb-6 flex flex-wrap gap-2">
         <input
           type="text"
           placeholder="Product name..."
@@ -40,7 +40,7 @@ export default function AlertsPage() {
         />
         <button
           onClick={addAlert}
-          className="bg-purple-600 text-white px-4 py-3 rounded-r-lg hover:bg-purple-700 transition ml-2"
+          className="bg-purple-600 text-white px-4 py-3 rounded-r-lg hover:bg-purple-700 transition"
         >
           Add Alert
         </button>
