@@ -1,19 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-
-interface Product {
-  site: string;
-  title: string;
-  price: string;
-  rating: string;
-  reviews: string;
-  link: string;
-}
+import { useState } from "react";
 
 export default function ComparePage() {
   const [product, setProduct] = useState("");
-  const [results, setResults] = useState<Product[]>([]);
-  const [bestOption, setBestOption] = useState<Product | null>(null);
+  const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,16 +11,11 @@ export default function ComparePage() {
     if (!product) return;
     setLoading(true);
     setError("");
-    setResults([]);
-    setBestOption(null);
-
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
-      setResults(data.all_results || []);
-      setBestOption(data.best_option || null);
+      setResults(data);
     } catch (err) {
-      console.error(err);
       setError("Failed to fetch comparison results.");
     } finally {
       setLoading(false);
@@ -38,94 +23,92 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 animate-gradient-x transition-all">
-      {/* Header */}
-      <header className="text-center py-10">
-        <h1 className="text-5xl font-extrabold text-blue-600 mb-2 animate-pulse">
-          MoolyaSetu
-        </h1>
-        <p className="text-lg text-gray-700 max-w-xl mx-auto">
-          Smart shopping alerts & product comparisons. Find the best deals, ratings, and reviews instantly.
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-8">
+      <h1 className="text-4xl font-extrabold text-center text-blue-800 mb-8">
+        Product Comparison
+      </h1>
 
-      {/* Search */}
-      <div className="flex justify-center mb-8 flex-wrap gap-2">
+      {/* Search bar */}
+      <div className="flex justify-center mb-8">
         <input
           type="text"
           value={product}
           onChange={(e) => setProduct(e.target.value)}
           placeholder="Enter product name..."
-          className="border rounded-l-lg p-3 w-80 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+          className="border rounded-l-lg p-3 w-80 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <button
           onClick={fetchComparison}
-          className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 hover:scale-105 transform transition"
+          className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition"
         >
           Compare
         </button>
       </div>
 
-      {/* Loading/Error */}
-      {loading && <p className="text-center text-gray-600">Fetching results...</p>}
-      {error && <p className="text-center text-red-600">{error}</p>}
+      {loading && <p className="text-center text-gray-700 font-semibold">Fetching results...</p>}
+      {error && <p className="text-center text-red-600 font-semibold">{error}</p>}
 
-      {/* Best Option */}
-      {bestOption && (
-        <div className="max-w-3xl mx-auto mb-6 p-6 bg-gradient-to-r from-green-100 via-green-200 to-green-100 border border-green-400 rounded-xl shadow-lg transform hover:scale-105 transition">
-          <h2 className="text-2xl font-bold text-green-700 mb-2 flex items-center gap-2">
-            🏆 Best Option
-          </h2>
-          <p className="font-semibold mb-1">{bestOption.title}</p>
-          <p className="text-lg text-green-800 mb-1">💰 {bestOption.price}</p>
-          {bestOption.rating && <p className="text-yellow-600 mb-1">⭐ {bestOption.rating}</p>}
-          {bestOption.reviews && <p className="text-gray-600 mb-1">📝 {bestOption.reviews} reviews</p>}
-          <a
-            href={bestOption.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline font-semibold"
-          >
-            🔗 View Product
-          </a>
-        </div>
-      )}
-
-      {/* All Results Grid */}
-      {results.length > 0 && (
-        <div className="max-w-5xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Top Products</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {results.map((r, idx) => (
-              <div
-                key={idx}
-                className={`border rounded-xl p-4 shadow-md hover:shadow-xl transform hover:scale-105 transition duration-300 ${
-                  r === bestOption ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"
-                }`}
-              >
-                <p className="font-semibold mb-1">🏷 {r.site}</p>
-                <p className="text-gray-700 mb-1">{r.title}</p>
-                <p className="text-gray-900 font-bold mb-1">💰 {r.price}</p>
-                {r.rating && <p className="text-yellow-600 mb-1">⭐ {r.rating}</p>}
-                {r.reviews && <p className="text-gray-500 mb-2">📝 {r.reviews} reviews</p>}
+      {results && (
+        <div className="max-w-3xl mx-auto space-y-6">
+          {/* Best Option */}
+          {results.best_option && (
+            <div className="bg-green-100 border-l-4 border-green-500 p-6 rounded shadow-md animate-fadeIn">
+              <h2 className="text-2xl font-bold text-green-700 mb-3">Best Option</h2>
+              <p className="text-lg">
+                <span className="font-semibold">{results.best_option.site}</span> — {results.best_option.price}
+              </p>
+              {results.best_option.rating && (
+                <p className="text-sm text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
+              )}
+              {results.best_option.reviews && (
+                <p className="text-sm text-gray-700">{results.best_option.reviews} reviews</p>
+              )}
+              {results.best_option.link && (
                 <a
-                  href={r.link}
+                  href={results.best_option.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-blue-700 hover:underline font-medium"
                 >
-                  🔗 View Product
+                  View Product
                 </a>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
+
+          {/* All Results */}
+          <h2 className="text-2xl font-bold text-gray-800">All Results</h2>
+          <ul className="space-y-4">
+            {Array.isArray(results.all_results) &&
+              results.all_results.map((r: any, i: number) => (
+                <li
+                  key={i}
+                  className={`bg-white p-5 rounded-lg shadow-md transition hover:scale-105 hover:shadow-lg ${
+                    r.site === results.best_option?.site ? "border-2 border-green-500" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold text-gray-800">{r.site}</span>
+                    <span className="text-gray-700">{r.price || r.error}</span>
+                  </div>
+                  {r.title && <p className="text-gray-600 mb-1">{r.title}</p>}
+                  {r.rating && <p className="text-yellow-600 text-sm mb-1">Rating: {r.rating} ⭐</p>}
+                  {r.reviews && <p className="text-gray-500 text-sm mb-2">{r.reviews} reviews</p>}
+                  {r.link && (
+                    <a
+                      href={r.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      View Product
+                    </a>
+                  )}
+                </li>
+              ))}
+          </ul>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="text-center py-6 mt-10 text-gray-600">
-        © 2026 MoolyaSetu. Made with ❤️ to help you find the best deals online.
-      </footer>
     </div>
   );
 }
