@@ -23,9 +23,15 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="min-h-screen p-8 relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50">
-      <h1 className="text-4xl font-extrabold text-center text-blue-700 mb-8">
-        Product Comparison
+    <div className="min-h-screen relative overflow-hidden p-8 bg-gradient-to-br from-purple-200 via-pink-100 to-yellow-50 animate-gradient-x">
+      {/* Floating graphics */}
+      <div className="absolute top-10 left-10 w-16 h-16 rounded-full bg-blue-300 opacity-40 animate-bounce-slow" />
+      <div className="absolute bottom-20 right-16 w-24 h-24 rounded-full bg-pink-300 opacity-30 animate-spin-slow" />
+      <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full bg-yellow-200 opacity-20 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow" />
+
+      {/* Title */}
+      <h1 className="text-5xl font-extrabold text-center text-blue-700 mb-8 drop-shadow-lg">
+        DealMatrix
       </h1>
 
       {/* Search Bar */}
@@ -46,21 +52,34 @@ export default function ComparePage() {
       </div>
 
       {/* Loading & Error */}
-      {loading && <p className="text-center text-gray-600">Fetching results...</p>}
+      {loading && <p className="text-center text-gray-600">Fetching deals...</p>}
       {error && <p className="text-center text-red-600">{error}</p>}
 
       {/* Results */}
       {results && (
-        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-lg p-6">
+        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-xl p-6 relative z-10">
           {/* Best Option */}
           {results.best_option && (
-            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
-              <h2 className="text-2xl font-bold text-green-700 mb-2">Best Option</h2>
-              <p className="font-semibold">{results.best_option.site} — {results.best_option.price}</p>
-              {results.best_option.rating && <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>}
-              {results.best_option.reviews && <p className="text-gray-500">{results.best_option.reviews} reviews</p>}
+            <div className="mb-6 p-5 border-l-4 border-green-500 bg-green-50 rounded-lg animate-pulse">
+              <h2 className="text-2xl font-bold text-green-700 mb-2">
+                Best Deal
+              </h2>
+              <p className="font-semibold">
+                {results.best_option.site} — {results.best_option.price}
+              </p>
+              {results.best_option.rating && (
+                <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
+              )}
+              {results.best_option.reviews && (
+                <p className="text-gray-500">{results.best_option.reviews} reviews</p>
+              )}
               {results.best_option.link && (
-                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                <a
+                  href={results.best_option.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
                   View Product
                 </a>
               )}
@@ -68,7 +87,7 @@ export default function ComparePage() {
           )}
 
           {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">All Results</h2>
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">Other Options</h2>
           <ul className="divide-y divide-gray-200">
             {Array.isArray(results.all_results) &&
               results.all_results.map((r: any, i: number) => (
@@ -81,7 +100,12 @@ export default function ComparePage() {
                   {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
                   {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
                   {r.link && (
-                    <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    <a
+                      href={r.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
                       View Product
                     </a>
                   )}
@@ -90,6 +114,15 @@ export default function ComparePage() {
           </ul>
         </div>
       )}
+
+      {/* Slow floating footer icon */}
+      <div className="absolute bottom-5 right-5 w-12 h-12 bg-purple-300 rounded-full opacity-40 animate-bounce-slow"></div>
+
+      <style jsx>{`
+        .animate-bounce-slow { animation: bounce 8s infinite; }
+        .animate-spin-slow { animation: spin 30s linear infinite; }
+        .animate-pulse-slow { animation: pulse 5s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
