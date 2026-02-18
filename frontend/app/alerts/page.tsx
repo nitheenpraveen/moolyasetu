@@ -1,66 +1,41 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [product, setProduct] = useState("");
-  const [site, setSite] = useState("");
-  const [alertType, setAlertType] = useState("");
+  const [alerts, setAlerts] = useState([
+    { product: "Toothbrush", price: "₹900", id: 1 },
+    { product: "Wireless Mouse", price: "₹500", id: 2 },
+  ]);
+  const [newProduct, setNewProduct] = useState("");
+  const [newPrice, setNewPrice] = useState("");
 
-  async function fetchAlerts() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/alerts`);
-    const data = await res.json();
-    setAlerts(data);
-  }
+  const addAlert = () => {
+    if (!newProduct || !newPrice) return;
+    setAlerts([...alerts, { product: newProduct, price: newPrice, id: Date.now() }]);
+    setNewProduct("");
+    setNewPrice("");
+  };
 
-  async function createAlert() {
-    const url = `${process.env.NEXT_PUBLIC_API_BASE}/alerts?product=${product}&site=${site}&alert_type=${alertType}`;
-    await fetch(url, { method: "POST" });
-    fetchAlerts();
-  }
-
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
+  const removeAlert = (id: number) => {
+    setAlerts(alerts.filter((a) => a.id !== id));
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Alerts</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-8">
+      <h1 className="text-4xl font-extrabold text-center text-blue-800 mb-8">
+        Price Alerts
+      </h1>
 
-      <div className="mt-4">
+      <div className="flex justify-center gap-2 mb-6 flex-wrap">
         <input
           type="text"
-          placeholder="Product"
-          value={product}
-          onChange={(e) => setProduct(e.target.value)}
-          className="border p-2 mr-2"
+          placeholder="Product Name"
+          value={newProduct}
+          onChange={(e) => setNewProduct(e.target.value)}
+          className="border rounded-l-lg p-3 w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <input
           type="text"
-          placeholder="Site"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="text"
-          placeholder="Alert Type"
-          value={alertType}
-          onChange={(e) => setAlertType(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <button
-          onClick={createAlert}
-          className="bg-green-500 text-white px-4 py-2"
-        >
-          Create Alert
-        </button>
-      </div>
-
-      <div className="mt-6">
-        <h2 className="text-xl">Existing Alerts</h2>
-        <pre>{JSON.stringify(alerts, null, 2)}</pre>
-      </div>
-    </div>
-  );
-}
+          placeholder="Target Price"
+          value={newPrice}
+          onChange={(e) => setNewPrice(e.target.value
