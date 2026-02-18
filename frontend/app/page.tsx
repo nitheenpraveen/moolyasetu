@@ -5,15 +5,14 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
       {/* Animated Gradient Background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-blue-400 via-purple-500 to-pink-400 animate-gradient-x" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-blue-100 via-purple-200 to-pink-100 animate-gradient-x" />
 
-      <h1 className="text-6xl font-extrabold text-white mb-6 text-center">
+      <h1 className="text-6xl font-extrabold text-blue-700 mb-6 text-center">
         MoolyaSetu
       </h1>
-      <p className="text-lg text-white mb-10 text-center max-w-xl">
+      <p className="text-lg text-gray-700 mb-10 text-center max-w-xl">
         Smart shopping alerts and product comparisons. Get real-time price tracking, reviews, ratings, and discover the best deals across top e-commerce platforms.
       </p>
-
       <div className="flex flex-wrap gap-4 justify-center">
         <Link
           href="/compare"
