@@ -11,31 +11,37 @@ export default function ComparePage() {
     if (!product) return;
     setLoading(true);
     setError("");
+    setResults(null);
+
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
       setResults(data);
     } catch {
-      setError("Failed to fetch comparison results.");
+      setError("Failed to fetch deals.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden p-8 bg-gradient-to-br from-purple-200 via-pink-100 to-yellow-50 animate-gradient-x">
-      {/* Floating graphics */}
-      <div className="absolute top-10 left-10 w-16 h-16 rounded-full bg-blue-300 opacity-40 animate-bounce-slow" />
-      <div className="absolute bottom-20 right-16 w-24 h-24 rounded-full bg-pink-300 opacity-30 animate-spin-slow" />
-      <div className="absolute top-1/2 left-1/2 w-32 h-32 rounded-full bg-yellow-200 opacity-20 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow" />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-200 via-pink-200 to-yellow-50 flex flex-col items-center p-8">
+      {/* Floating Graphics */}
+      <div className="absolute -z-10 w-full h-full pointer-events-none">
+        <div className="absolute top-10 left-5 w-24 h-24 bg-blue-200 rounded-full opacity-30 animate-bounce-slow" />
+        <div className="absolute top-1/3 right-10 w-32 h-32 bg-pink-300 rounded-full opacity-20 animate-spin-slow" />
+        <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-purple-300 rounded-full opacity-25 animate-bounce-slow" />
+      </div>
 
-      {/* Title */}
-      <h1 className="text-5xl font-extrabold text-center text-blue-700 mb-8 drop-shadow-lg">
+      <h1 className="text-5xl font-extrabold text-blue-700 mb-6 text-center">
         DealMatrix
       </h1>
+      <p className="text-lg text-gray-700 mb-8 text-center max-w-xl">
+        Discover the best deals on products instantly. Powered by eBay API for real-time prices, ratings, and reviews.
+      </p>
 
       {/* Search Bar */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center mb-6 flex-wrap gap-2">
         <input
           type="text"
           value={product}
@@ -47,28 +53,32 @@ export default function ComparePage() {
           onClick={fetchComparison}
           className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition"
         >
-          Compare
+          Search Deals
         </button>
       </div>
 
-      {/* Loading & Error */}
-      {loading && <p className="text-center text-gray-600">Fetching deals...</p>}
-      {error && <p className="text-center text-red-600">{error}</p>}
+      {/* Loading / Error */}
+      {loading && (
+        <div className="text-center text-gray-600 animate-pulse mb-6">
+          Fetching deals...
+        </div>
+      )}
+      {error && <p className="text-center text-red-600 mb-6">{error}</p>}
 
       {/* Results */}
       {results && (
-        <div className="max-w-3xl mx-auto bg-white shadow-2xl rounded-xl p-6 relative z-10">
+        <div className="max-w-3xl w-full bg-white shadow-2xl rounded-lg p-6 relative z-10">
           {/* Best Option */}
           {results.best_option && (
-            <div className="mb-6 p-5 border-l-4 border-green-500 bg-green-50 rounded-lg animate-pulse">
-              <h2 className="text-2xl font-bold text-green-700 mb-2">
-                Best Deal
-              </h2>
+            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
+              <h2 className="text-2xl font-bold text-green-700 mb-2">Top Deal</h2>
               <p className="font-semibold">
                 {results.best_option.site} — {results.best_option.price}
               </p>
               {results.best_option.rating && (
-                <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
+                <p className="text-yellow-600">
+                  Rating: {results.best_option.rating} ⭐
+                </p>
               )}
               {results.best_option.reviews && (
                 <p className="text-gray-500">{results.best_option.reviews} reviews</p>
@@ -80,14 +90,14 @@ export default function ComparePage() {
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
                 >
-                  View Product
+                  View Deal
                 </a>
               )}
             </div>
           )}
 
           {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Other Options</h2>
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">Other Deals</h2>
           <ul className="divide-y divide-gray-200">
             {Array.isArray(results.all_results) &&
               results.all_results.map((r: any, i: number) => (
@@ -106,7 +116,7 @@ export default function ComparePage() {
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      View Product
+                      View Deal
                     </a>
                   )}
                 </li>
@@ -115,13 +125,14 @@ export default function ComparePage() {
         </div>
       )}
 
-      {/* Slow floating footer icon */}
-      <div className="absolute bottom-5 right-5 w-12 h-12 bg-purple-300 rounded-full opacity-40 animate-bounce-slow"></div>
-
+      {/* Custom Animations */}
       <style jsx>{`
-        .animate-bounce-slow { animation: bounce 8s infinite; }
-        .animate-spin-slow { animation: spin 30s linear infinite; }
-        .animate-pulse-slow { animation: pulse 5s ease-in-out infinite; }
+        .animate-bounce-slow {
+          animation: bounce 10s infinite alternate;
+        }
+        .animate-spin-slow {
+          animation: spin 20s linear infinite;
+        }
       `}</style>
     </div>
   );
