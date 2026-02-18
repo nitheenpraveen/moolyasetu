@@ -15,7 +15,7 @@ export default function ComparePage() {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
       setResults(data);
-    } catch (err) {
+    } catch {
       setError("Failed to fetch comparison results.");
     } finally {
       setLoading(false);
@@ -28,7 +28,7 @@ export default function ComparePage() {
         Product Comparison
       </h1>
 
-      {/* Search bar */}
+      {/* Search */}
       <div className="flex justify-center mb-8">
         <input
           type="text"
@@ -57,19 +57,10 @@ export default function ComparePage() {
               <p className="text-lg">
                 <span className="font-semibold">{results.best_option.site}</span> — {results.best_option.price}
               </p>
-              {results.best_option.rating && (
-                <p className="text-sm text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
-              )}
-              {results.best_option.reviews && (
-                <p className="text-sm text-gray-700">{results.best_option.reviews} reviews</p>
-              )}
+              {results.best_option.rating && <p className="text-yellow-600 text-sm">Rating: {results.best_option.rating} ⭐</p>}
+              {results.best_option.reviews && <p className="text-gray-700 text-sm">{results.best_option.reviews} reviews</p>}
               {results.best_option.link && (
-                <a
-                  href={results.best_option.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-700 hover:underline font-medium"
-                >
+                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium">
                   View Product
                 </a>
               )}
@@ -81,12 +72,7 @@ export default function ComparePage() {
           <ul className="space-y-4">
             {Array.isArray(results.all_results) &&
               results.all_results.map((r: any, i: number) => (
-                <li
-                  key={i}
-                  className={`bg-white p-5 rounded-lg shadow-md transition hover:scale-105 hover:shadow-lg ${
-                    r.site === results.best_option?.site ? "border-2 border-green-500" : ""
-                  }`}
-                >
+                <li key={i} className={`bg-white p-5 rounded-lg shadow-md transition hover:scale-105 hover:shadow-lg ${r.site === results.best_option?.site ? "border-2 border-green-500" : ""}`}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-semibold text-gray-800">{r.site}</span>
                     <span className="text-gray-700">{r.price || r.error}</span>
@@ -95,12 +81,7 @@ export default function ComparePage() {
                   {r.rating && <p className="text-yellow-600 text-sm mb-1">Rating: {r.rating} ⭐</p>}
                   {r.reviews && <p className="text-gray-500 text-sm mb-2">{r.reviews} reviews</p>}
                   {r.link && (
-                    <a
-                      href={r.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-medium"
-                    >
+                    <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
                       View Product
                     </a>
                   )}
