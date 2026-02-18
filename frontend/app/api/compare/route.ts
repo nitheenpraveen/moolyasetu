@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       site: "eBay",
       url: `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${product}`,
       headers: {
-        Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN}`,
+        Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN!}`,
       },
     },
     {
@@ -49,16 +49,22 @@ export async function GET(req: Request) {
 
   for (const source of sources) {
     try {
+      const headers: Record<string, string> = {};
+      if (source.headers) {
+        for (const [key, value] of Object.entries(source.headers)) {
+          if (value !== undefined) headers[key] = value;
+        }
+      }
+
       const res = await fetch(source.url, {
         method: source.method || "GET",
-        headers: source.headers,
+        headers,
         body: source.method === "POST" ? source.body : undefined,
       });
 
       const data = await res.json();
       console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
 
-      // Flipkart CPL API returns flat fields
       if (source.site === "Flipkart") {
         results.push({
           site: source.site,
@@ -73,7 +79,6 @@ export async function GET(req: Request) {
         continue;
       }
 
-      // eBay Browse API returns items array
       if (source.site === "eBay") {
         const firstItem = data.itemSummaries?.[0] || null;
         results.push({
@@ -87,7 +92,6 @@ export async function GET(req: Request) {
         continue;
       }
 
-      // Generic parsing for Amazon, Reliance, TataCliq
       const firstProduct =
         data.products?.[0] ||
         data.results?.[0] ||
@@ -125,7 +129,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // Pick best option by lowest price + highest rating
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
     const currPrice = parseInt(curr.price.replace(/\D/g, "")) || Infinity;
