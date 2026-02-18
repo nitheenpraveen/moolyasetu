@@ -2,23 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colors and fonts */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #6b21a8; /* purple */
+  --secondary: #3b82f6; /* blue */
+  --accent: #10b981; /* green */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
+/* Dark mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --primary: #c084fc;
+    --secondary: #60a5fa;
+    --accent: #34d399;
   }
 }
 
+/* Gradient animation */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 15s ease infinite;
+}
+
+/* Fade-in animation */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 1s ease forwards; }
+.animate-fade-in.delay-200 { animation-delay: 0.2s; }
+.animate-fade-in.delay-400 { animation-delay: 0.4s; }
+
+/* Slow bounce & spin animations for background shapes */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+.animate-bounce-slow { animation: bounce-slow 10s ease-in-out infinite; }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 60s linear infinite; }
+
+/* Base body styles */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -26,39 +62,10 @@ body {
   transition: background 0.3s, color 0.3s;
 }
 
-@keyframes gradient-x {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+/* Buttons hover effects */
+.btn {
+  transition: transform 0.3s ease, background 0.3s ease;
 }
-
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradient-x 15s ease infinite;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.8s ease forwards;
-}
-
-@keyframes spin-slow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 60s linear infinite;
-}
-
-@keyframes bounce-slow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
-.animate-bounce-slow {
-  animation: bounce-slow 10s ease-in-out infinite;
+.btn:hover {
+  transform: translateY(-2px) scale(1.05);
 }
