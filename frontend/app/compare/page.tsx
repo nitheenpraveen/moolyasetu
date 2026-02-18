@@ -23,12 +23,10 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-8">
-      <h1 className="text-4xl font-extrabold text-center text-blue-800 mb-8">
-        Product Comparison
-      </h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-100 p-8">
+      <h1 className="text-4xl font-bold text-blue-600 mb-8 text-center">Product Comparison</h1>
 
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-6">
         <input
           type="text"
           value={product}
@@ -44,51 +42,30 @@ export default function ComparePage() {
         </button>
       </div>
 
-      {loading && <p className="text-center text-gray-700 font-semibold">Fetching results...</p>}
-      {error && <p className="text-center text-red-600 font-semibold">{error}</p>}
+      {loading && <p className="text-center text-gray-600">Fetching results...</p>}
+      {error && <p className="text-center text-red-600">{error}</p>}
 
       {results && (
-        <div className="max-w-3xl mx-auto space-y-6">
-          {/* Best Option */}
+        <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
           {results.best_option && (
-            <div className="bg-green-100 border-l-4 border-green-500 p-6 rounded shadow-md animate-fadeIn">
-              <h2 className="text-2xl font-bold text-green-700 mb-3">Best Option</h2>
-              <p className="text-lg">
-                <span className="font-semibold">{results.best_option.site}</span> — {results.best_option.price}
-              </p>
-              {results.best_option.rating && <p className="text-yellow-600 text-sm">Rating: {results.best_option.rating} ⭐</p>}
-              {results.best_option.reviews && <p className="text-gray-700 text-sm">{results.best_option.reviews} reviews</p>}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-green-600 mb-2">Best Option</h2>
+              <p><span className="font-semibold">{results.best_option.site}</span> — {results.best_option.price}</p>
+              {results.best_option.rating && <p className="text-sm text-yellow-600">Rating: {results.best_option.rating} ⭐</p>}
+              {results.best_option.reviews && <p className="text-sm text-gray-500">{results.best_option.reviews} reviews</p>}
               {results.best_option.link && (
-                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium">
+                <a href={results.best_option.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                   View Product
                 </a>
               )}
             </div>
           )}
 
-          {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-800">All Results</h2>
-          <ul className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">All Results</h2>
+          <ul className="divide-y divide-gray-200">
             {Array.isArray(results.all_results) &&
               results.all_results.map((r: any, i: number) => (
-                <li key={i} className={`bg-white p-5 rounded-lg shadow-md transition hover:scale-105 hover:shadow-lg ${r.site === results.best_option?.site ? "border-2 border-green-500" : ""}`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-gray-800">{r.site}</span>
-                    <span className="text-gray-700">{r.price || r.error}</span>
-                  </div>
-                  {r.title && <p className="text-gray-600 mb-1">{r.title}</p>}
-                  {r.rating && <p className="text-yellow-600 text-sm mb-1">Rating: {r.rating} ⭐</p>}
-                  {r.reviews && <p className="text-gray-500 text-sm mb-2">{r.reviews} reviews</p>}
-                  {r.link && (
-                    <a href={r.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
-                      View Product
-                    </a>
-                  )}
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
+                <li key={i} className="py-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{r.site}</span>
+                    <span>{r.price || r.error}</span>
