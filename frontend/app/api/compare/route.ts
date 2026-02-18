@@ -1,3 +1,4 @@
+// app/api/compare/route.ts
 import { NextResponse } from "next/server";
 
 type ProductResult = {
@@ -15,27 +16,69 @@ export async function GET(req: Request) {
   const product = searchParams.get("product")?.trim();
 
   if (!product) {
-    return NextResponse.json({ best_option: null, all_results: [], message: "No product specified" });
+    return NextResponse.json({
+      best_option: null,
+      all_results: [],
+      message: "No product specified",
+    });
   }
 
-  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product)}`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
-    },
-  });
+  const EBAY_TOKEN = process.env.EBAY_OAUTH_TOKEN_SANDBOX;
+  if (!EBAY_TOKEN) {
+    return NextResponse.json({
+      best_option: null,
+      all_results: [],
+      message: "eBay token not set",
+    });
+  }
 
-  const data = await res.json();
-  const firstItem = data?.itemSummaries?.[0] || null;
+  try {
+    // Fetch eBay Sandbox API
+    const res = await fetch(
+      `https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+        product
+      )}&limit=5`,
+      {
+        headers: {
+          Authorization: `Bearer ${EBAY_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  const result: ProductResult = {
-    site: "eBay",
-    title: firstItem?.title || "No product found",
-    price: firstItem?.price?.value || "N/A",
-    rating: firstItem?.rating || "N/A",
-    reviews: firstItem?.reviewCount?.toString() || "N/A",
-    link: firstItem?.itemWebUrl || "#",
-  };
+    const data = await res.json();
 
-  return NextResponse.json({ best_option: result, all_results: [result] });
+    const results: ProductResult[] =
+      data.itemSummaries?.map((item: any) => ({
+        site: "eBay Sandbox",
+        title: item.title,
+        price: item.price?.value + " " + item.price?.currency || "N/A",
+        rating: item.rating?.value?.toString() || "N/A",
+        reviews: item.reviewCount?.toString() || "N/A",
+        link: item.itemWebUrl,
+      })) || [];
+
+    // Determine best option: lowest price first, then highest rating
+    const best_option = results.reduce<ProductResult | null>((best, curr) => {
+      if (!curr.price || curr.price === "N/A") return best;
+      const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
+      const bestPrice = parseFloat(best?.price?.replace(/[^0-9.]/g, "")) || Infinity;
+      const currRating = parseFloat(curr.rating) || 0;
+      const bestRating = parseFloat(best?.rating) || 0;
+
+      if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
+        return curr;
+      }
+      return best;
+    }, null);
+
+    return NextResponse.json({ best_option, all_results: results });
+  } catch (err) {
+    console.error("eBay API error:", err);
+    return NextResponse.json({
+      best_option: null,
+      all_results: [],
+      message: "Error fetching data from eBay",
+    });
+  }
 }
