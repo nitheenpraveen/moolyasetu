@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  // 👀 Debug environment variables
-  console.log("=== ENV CHECK START ===");
+  // ✅ Debug environment variable (optional, remove later)
   console.log("EBAY_OAUTH_TOKEN:", process.env.EBAY_OAUTH_TOKEN);
-  console.log("=== ENV CHECK END ===");
 
   const { searchParams } = new URL(req.url);
   const product = searchParams.get("product") || "";
 
-  // ✅ Only eBay API source
+  // ✅ Only eBay source
   const sources = [
     {
       site: "eBay",
@@ -32,7 +30,7 @@ export async function GET(req: Request) {
       const data = await res.json();
       console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
 
-      // Extract first item from eBay results
+      // Extract first product from eBay results
       const firstItem = data.itemSummaries?.[0] || null;
       results.push({
         site: source.site,
@@ -48,7 +46,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // Simple logic to find best option
+  // Determine best option (lowest price + highest rating)
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
     const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
