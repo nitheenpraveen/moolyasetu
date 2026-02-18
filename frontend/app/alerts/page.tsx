@@ -38,4 +38,40 @@ export default function AlertsPage() {
           type="text"
           placeholder="Target Price"
           value={newPrice}
-          onChange={(e) => setNewPrice(e.target.value
+          onChange={(e) => setNewPrice(e.target.value)}
+          className="border p-3 w-32 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <button
+          onClick={addAlert}
+          className="bg-green-600 text-white px-4 py-3 rounded-r-lg hover:bg-green-700 transition"
+        >
+          Add Alert
+        </button>
+      </div>
+
+      <div className="max-w-2xl mx-auto space-y-4">
+        {alerts.length > 0 ? (
+          alerts.map((a) => (
+            <div
+              key={a.id}
+              className="bg-white p-5 rounded-lg shadow-md flex justify-between items-center transition hover:scale-105 hover:shadow-lg"
+            >
+              <div>
+                <p className="font-semibold text-gray-800">{a.product}</p>
+                <p className="text-gray-600 text-sm">Target Price: {a.price}</p>
+              </div>
+              <button
+                onClick={() => removeAlert(a.id)}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+              >
+                Remove
+              </button>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-gray-700">No alerts yet. Add one above!</p>
+        )}
+      </div>
+    </div>
+  );
+}
