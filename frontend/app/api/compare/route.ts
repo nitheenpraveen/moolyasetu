@@ -7,21 +7,28 @@ export async function GET(req: Request) {
   const sources = [
     {
       site: "Amazon India",
-      // ScraperAPI proxy for Amazon search
       url: `https://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=https://www.amazon.in/s?k=${product}`,
     },
     {
       site: "Flipkart",
-      // RapidAPI Flipkart Real-Time Data API
-      url: `https://flipkart-real-time-data.p.rapidapi.com/search?query=${product}`,
+      url: "https://flipkart-cost-per-lifetime.p.rapidapi.com/result",
+      method: "POST",
       headers: {
         "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
         "X-RapidAPI-Host": "flipkart-cost-per-lifetime.p.rapidapi.com",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `Name=https://www.flipkart.com/search?q=${product}`,
+    },
+    {
+      site: "eBay",
+      url: `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${product}`,
+      headers: {
+        Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN}`,
       },
     },
     {
       site: "Reliance Digital",
-      // Placeholder: update once you subscribe to a Reliance Digital scraper
       url: `https://reliance-digital-api.p.rapidapi.com/search?query=${product}`,
       headers: {
         "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
@@ -30,7 +37,6 @@ export async function GET(req: Request) {
     },
     {
       site: "TataCliq",
-      // Placeholder: update once you subscribe to a TataCliq scraper
       url: `https://tatacliq-api.p.rapidapi.com/search?query=${product}`,
       headers: {
         "X-RapidAPI-Key": process.env.RAPIDAPI_KEY!,
@@ -43,11 +49,45 @@ export async function GET(req: Request) {
 
   for (const source of sources) {
     try {
-      const res = await fetch(source.url, { headers: source.headers });
-      const data = await res.json();
+      const res = await fetch(source.url, {
+        method: source.method || "GET",
+        headers: source.headers,
+        body: source.method === "POST" ? source.body : undefined,
+      });
 
+      const data = await res.json();
       console.log(`${source.site} response:`, JSON.stringify(data, null, 2));
 
+      // Flipkart CPL API returns flat fields
+      if (source.site === "Flipkart") {
+        results.push({
+          site: source.site,
+          title: data.title || "No product found",
+          price: data.price || "N/A",
+          rating: data.rating || "N/A",
+          reviews: data.value || "N/A",
+          link: source.body.replace("Name=", "") || "#",
+          warranty: data.warranty || "N/A",
+          cpl: data.CPL || "N/A",
+        });
+        continue;
+      }
+
+      // eBay Browse API returns items array
+      if (source.site === "eBay") {
+        const firstItem = data.itemSummaries?.[0] || null;
+        results.push({
+          site: source.site,
+          title: firstItem?.title || "No product found",
+          price: firstItem?.price?.value || "N/A",
+          rating: firstItem?.rating || "N/A",
+          reviews: firstItem?.reviewCount || "N/A",
+          link: firstItem?.itemWebUrl || "#",
+        });
+        continue;
+      }
+
+      // Generic parsing for Amazon, Reliance, TataCliq
       const firstProduct =
         data.products?.[0] ||
         data.results?.[0] ||
@@ -85,6 +125,7 @@ export async function GET(req: Request) {
     }
   }
 
+  // Pick best option by lowest price + highest rating
   const best_option = results.reduce((best, curr) => {
     if (!curr.price || curr.price === "N/A") return best;
     const currPrice = parseInt(curr.price.replace(/\D/g, "")) || Infinity;
