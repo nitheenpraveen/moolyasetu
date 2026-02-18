@@ -11,14 +11,14 @@ export default function Home() {
         MoolyaSetu
       </h1>
       <p className="text-lg text-gray-700 mb-10 text-center max-w-xl">
-        Smart shopping alerts and product comparisons. Get real-time price tracking, reviews, ratings, and discover the best deals across top e-commerce platforms.
+        Smart shopping alerts and Nirṇaya (product comparisons). Discover best deals with real-time price, ratings, and reviews across top e-commerce platforms.
       </p>
       <div className="flex flex-wrap gap-4 justify-center">
         <Link
           href="/compare"
           className="bg-blue-600 text-white px-8 py-4 rounded-lg shadow-lg hover:bg-blue-700 transition"
         >
-          Compare Products
+          Nirṇaya
         </Link>
         <Link
           href="/alerts"
