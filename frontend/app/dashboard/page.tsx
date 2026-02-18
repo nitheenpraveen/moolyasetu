@@ -20,13 +20,7 @@ export default function DashboardPage() {
               <span className="font-medium">{p.name}</span>
               <div className="text-right">
                 <span className="block">{p.lastPrice}</span>
-                <span
-                  className={`text-sm ${
-                    p.change.startsWith("+") ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {p.change}
-                </span>
+                <span className={`text-sm ${p.change.startsWith("+") ? "text-green-600" : "text-red-600"}`}>{p.change}</span>
               </div>
             </li>
           ))}
