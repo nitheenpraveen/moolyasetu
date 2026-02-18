@@ -15,57 +15,27 @@ export async function GET(req: Request) {
   const product = searchParams.get("product")?.trim();
 
   if (!product) {
-    return NextResponse.json({
-      best_option: null,
-      all_results: [],
-      message: "No product specified",
-    });
+    return NextResponse.json({ best_option: null, all_results: [], message: "No product specified" });
   }
 
-  const eBayUrl = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
-    product
-  )}`;
+  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product)}`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
+    },
+  });
 
-  try {
-    const res = await fetch(eBayUrl, {
-      headers: {
-        Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
-        "Content-Type": "application/json",
-      },
-    });
+  const data = await res.json();
+  const firstItem = data?.itemSummaries?.[0] || null;
 
-    const data = await res.json();
+  const result: ProductResult = {
+    site: "eBay",
+    title: firstItem?.title || "No product found",
+    price: firstItem?.price?.value || "N/A",
+    rating: firstItem?.rating || "N/A",
+    reviews: firstItem?.reviewCount?.toString() || "N/A",
+    link: firstItem?.itemWebUrl || "#",
+  };
 
-    const results: ProductResult[] = (data?.itemSummaries || []).map((item: any) => ({
-      site: "eBay",
-      title: item.title,
-      price: item.price?.value || "N/A",
-      rating: item.rating || "N/A",
-      reviews: item.reviewCount?.toString() || "N/A",
-      link: item.itemWebUrl,
-    }));
-
-    // Determine the best option (lowest price, highest rating tie-breaker)
-    const best_option = results.reduce<ProductResult | null>((best, curr) => {
-      const currPrice = parseFloat(curr.price || "") || Infinity;
-      const bestPrice = parseFloat(best?.price || "") || Infinity;
-
-      const currRating = parseFloat(curr.rating || "") || 0;
-      const bestRating = parseFloat(best?.rating || "") || 0;
-
-      if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
-        return curr;
-      }
-      return best;
-    }, results.length > 0 ? results[0] : null);
-
-    return NextResponse.json({ best_option, all_results: results });
-  } catch (err) {
-    console.error("eBay fetch error:", err);
-    return NextResponse.json({
-      best_option: null,
-      all_results: [],
-      message: "Failed to fetch eBay results",
-    });
-  }
+  return NextResponse.json({ best_option: result, all_results: [result] });
 }
