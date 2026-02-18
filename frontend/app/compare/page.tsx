@@ -28,37 +28,8 @@ export default function ComparePage() {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
 
-      // Extract top 3 products from eBay
-      const ebayResults: Product[] = [];
-      const itemSummaries = data.all_results?.[0]?.itemSummaries || [];
-      for (let i = 0; i < Math.min(itemSummaries.length, 3); i++) {
-        const item = itemSummaries[i];
-        ebayResults.push({
-          site: "eBay",
-          title: item.title,
-          price: item.price?.value || "N/A",
-          rating: item.rating || "N/A",
-          reviews: item.reviewCount || "N/A",
-          link: item.itemWebUrl,
-        });
-      }
-
-      setResults(ebayResults);
-
-      // Determine best option: lowest price + highest rating
-      const best = ebayResults.reduce((best, curr) => {
-        const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-        const bestPrice = parseFloat(best?.price.replace(/[^0-9.]/g, "")) || Infinity;
-        const currRating = parseFloat(curr.rating) || 0;
-        const bestRating = parseFloat(best?.rating) || 0;
-
-        if (currPrice < bestPrice || (currPrice === bestPrice && currRating > bestRating)) {
-          return curr;
-        }
-        return best;
-      }, ebayResults[0] || null);
-
-      setBestOption(best || null);
+      setResults(data.all_results || []);
+      setBestOption(data.best_option || null);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch comparison results.");
@@ -68,12 +39,12 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <h1 className="text-4xl font-extrabold text-center text-blue-600 mb-8">
-        Product Comparison
+        MoolyaSetu - Product Comparison
       </h1>
 
-      {/* Search Bar */}
+      {/* Search bar */}
       <div className="flex justify-center mb-6 flex-wrap gap-2">
         <input
           type="text"
