@@ -15,11 +15,11 @@ export async function GET(req: NextRequest) {
 
   try {
     /* ===========================
-       1️⃣ Amazon (RapidAPI - /search)
+       1️⃣ Google Shopping Search (search-v2)
     ============================ */
 
-    const amazonRes = await fetch(
-      `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(
+    const res = await fetch(
+      `https://real-time-product-search.p.rapidapi.com/search-v2?q=${encodeURIComponent(
         product
       )}&country=us&language=en`,
       {
@@ -32,23 +32,21 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    console.log("Amazon Response OK:", amazonRes.ok);
-    console.log("Amazon Status:", amazonRes.status);
+    console.log("Search Response OK:", res.ok);
+    console.log("Search Status:", res.status);
 
-    let amazonData: any[] = [];
+    let products: any[] = [];
 
-    if (amazonRes.ok) {
-      const json = await amazonRes.json();
-      amazonData = json?.data?.products?.slice(0, 10) || [];
+    if (res.ok) {
+      const json = await res.json();
+      products = json?.data?.products?.slice(0, 10) || [];
     }
 
     /* ===========================
-       2️⃣ Fallback (Only if Amazon fails)
+       2️⃣ Fallback if API fails
     ============================ */
 
-    let fallbackData: any[] = [];
-
-    if (amazonData.length === 0) {
+    if (!res.ok || products.length === 0) {
       const dummyRes = await fetch(
         `https://dummyjson.com/products/search?q=${encodeURIComponent(
           product
@@ -57,7 +55,7 @@ export async function GET(req: NextRequest) {
 
       if (dummyRes.ok) {
         const dummyJson = await dummyRes.json();
-        fallbackData = dummyJson?.products?.slice(0, 10) || [];
+        products = dummyJson?.products?.slice(0, 10) || [];
       }
     }
 
@@ -65,118 +63,54 @@ export async function GET(req: NextRequest) {
        3️⃣ Normalize Data
     ============================ */
 
-    const normalizedAmazon = amazonData.map((item: any) => ({
-      source: "Amazon",
-      title: item.product_title,
+    const normalized = products.map((item: any) => ({
+      source: res.ok ? "Google Shopping" : "Structured Store",
+      title: item.product_title || item.title,
       price: parseFloat(
-        item.offer?.price?.replace(/[^0-9.]/g, "") || "0"
+        item.offer?.price?.replace(/[^0-9.]/g, "") ||
+          item.price ||
+          "0"
       ),
-      rating: item.product_rating || 0,
-      reviews: item.product_num_reviews || 0,
-      image: item.product_photo,
-      url: item.product_url,
+      rating: item.product_rating || item.rating || 0,
+      reviews:
+        item.product_num_reviews || item.stock || 0,
+      image: item.product_photo || item.thumbnail,
+      url: item.product_url || "#",
     }));
-
-    const normalizedFallback = fallbackData.map((item: any) => ({
-      source: "Structured Store",
-      title: item.title,
-      price: item.price,
-      rating: item.rating || 0,
-      reviews: item.stock || 0,
-      image: item.thumbnail,
-      url: "#",
-    }));
-
-    let allProducts =
-      normalizedAmazon.length > 0
-        ? normalizedAmazon
-        : normalizedFallback;
 
     /* ===========================
-       4️⃣ Remove Accessories
+       4️⃣ Smart Value Score
     ============================ */
 
-    const bannedWords = [
-      "case",
-      "cover",
-      "charger",
-      "cable",
-      "adapter",
-      "lamp",
-      "battery",
-      "protector",
-      "stand",
-      "holder",
-    ];
-
-    allProducts = allProducts.filter((item: any) => {
-      const title = item.title?.toLowerCase() || "";
-      return !bannedWords.some((word) =>
-        title.includes(word)
+    const enhanced = normalized.map((item: any) => {
+      const reviewWeight = Math.log(
+        (item.reviews || 0) + 1
       );
-    });
-
-    /* ===========================
-       5️⃣ Model Intelligence
-    ============================ */
-
-    function getModelScore(title: string) {
-      const t = title.toLowerCase();
-
-      if (t.includes("iphone 15")) return 10;
-      if (t.includes("iphone 14")) return 9;
-      if (t.includes("iphone 13")) return 8;
-      if (t.includes("iphone 12")) return 7;
-      if (t.includes("iphone 11")) return 6;
-      if (t.includes("iphone x")) return 4;
-      if (t.includes("iphone 8")) return 2;
-      if (t.includes("iphone 7")) return 1;
-      if (t.includes("iphone 6")) return 0;
-
-      return 5;
-    }
-
-    /* ===========================
-       6️⃣ Smart Value Engine
-    ============================ */
-
-    const enhancedProducts = allProducts.map((item: any) => {
-      const modelScore = getModelScore(item.title || "");
-      const reviewWeight = Math.log((item.reviews || 0) + 1);
 
       const baseValue =
         item.price > 0
           ? (item.rating * reviewWeight) / item.price
           : 0;
 
-      const valueScore =
-        baseValue * 0.5 +
-        (modelScore / 10) * 0.3 +
-        (item.rating / 5) * 0.2;
-
       return {
         ...item,
-        valueScore: Number(valueScore.toFixed(3)),
+        valueScore: Number(baseValue.toFixed(3)),
       };
     });
 
-    /* ===========================
-       7️⃣ Sort by Value
-    ============================ */
-
-    enhancedProducts.sort(
+    enhanced.sort(
       (a: any, b: any) =>
         (b.valueScore || 0) - (a.valueScore || 0)
     );
 
     return NextResponse.json({
       query: product,
-      totalResults: enhancedProducts.length,
-      bestValue: enhancedProducts[0] || null,
-      products: enhancedProducts,
+      totalResults: enhanced.length,
+      bestValue: enhanced[0] || null,
+      products: enhanced,
     });
   } catch (error) {
-    console.error("Comparison API Error:", error);
+    console.error("API Error:", error);
 
     return NextResponse.json(
       { error: "Failed to fetch product comparison." },
