@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   try {
     /* ===========================
-       1️⃣ Google Shopping Search (search-v2)
+       1️⃣ Google Shopping Search
     ============================ */
 
     const res = await fetch(
@@ -39,11 +39,11 @@ export async function GET(req: NextRequest) {
 
     if (res.ok) {
       const json = await res.json();
-      products = json?.data?.products?.slice(0, 10) || [];
+      products = json?.data?.products?.slice(0, 15) || [];
     }
 
     /* ===========================
-       2️⃣ Fallback if API fails
+       2️⃣ Fallback (if API fails)
     ============================ */
 
     if (!res.ok || products.length === 0) {
@@ -55,53 +55,92 @@ export async function GET(req: NextRequest) {
 
       if (dummyRes.ok) {
         const dummyJson = await dummyRes.json();
-        products = dummyJson?.products?.slice(0, 10) || [];
+        products = dummyJson?.products?.slice(0, 15) || [];
       }
     }
 
     /* ===========================
-       3️⃣ Normalize Data
+       3️⃣ Normalize Data Properly
     ============================ */
 
     const normalized = products.map((item: any) => ({
       source: res.ok ? "Google Shopping" : "Structured Store",
-      title: item.product_title || item.title,
-      price: parseFloat(
-        item.offer?.price?.replace(/[^0-9.]/g, "") ||
+
+      title: item.product_title || item.title || "Unknown",
+
+      price: Number(
+        item.offer?.primary?.extracted_price ||
+          item.offer?.extracted_price ||
+          (item.offer?.price
+            ? item.offer.price.replace(/[^0-9.]/g, "")
+            : null) ||
           item.price ||
-          "0"
+          0
       ),
-      rating: item.product_rating || item.rating || 0,
+
+      rating:
+        Number(item.product_rating) ||
+        Number(item.rating) ||
+        0,
+
       reviews:
-        item.product_num_reviews || item.stock || 0,
-      image: item.product_photo || item.thumbnail,
+        Number(item.product_num_reviews) ||
+        Number(item.reviews) ||
+        Number(item.stock) ||
+        0,
+
+      image: item.product_photo || item.thumbnail || null,
+
       url: item.product_url || "#",
     }));
 
     /* ===========================
-       4️⃣ Smart Value Score
+       4️⃣ Remove Junk / Accessories
     ============================ */
 
-    const enhanced = normalized.map((item: any) => {
-      const reviewWeight = Math.log(
-        (item.reviews || 0) + 1
-      );
+    const bannedWords = [
+      "case",
+      "cover",
+      "charger",
+      "cable",
+      "adapter",
+      "protector",
+      "stand",
+      "holder",
+    ];
 
-      const baseValue =
+    const filtered = normalized.filter((item) => {
+      const title = item.title.toLowerCase();
+      return !bannedWords.some((word) =>
+        title.includes(word)
+      );
+    });
+
+    /* ===========================
+       5️⃣ Smart Value Score
+    ============================ */
+
+    const enhanced = filtered.map((item) => {
+      const reviewWeight = Math.log(item.reviews + 1);
+
+      const valueScore =
         item.price > 0
           ? (item.rating * reviewWeight) / item.price
           : 0;
 
       return {
         ...item,
-        valueScore: Number(baseValue.toFixed(3)),
+        valueScore: Number(valueScore.toFixed(3)),
       };
     });
 
     enhanced.sort(
-      (a: any, b: any) =>
-        (b.valueScore || 0) - (a.valueScore || 0)
+      (a, b) => b.valueScore - a.valueScore
     );
+
+    /* ===========================
+       6️⃣ Final Response
+    ============================ */
 
     return NextResponse.json({
       query: product,
