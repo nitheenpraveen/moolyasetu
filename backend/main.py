@@ -59,10 +59,18 @@ def search_ebay(product: str):
     return products
 
 
-# 🧠 --- SMART SCORING SYSTEM --- #
+# 🧠 --- SMART SCORING SYSTEM V2 --- #
 
 def extract_model_score(title: str):
     title_lower = title.lower()
+
+    # Heavy penalties for very old models
+    if "iphone 6" in title_lower:
+        return 1
+    if "iphone 7" in title_lower:
+        return 2
+    if "iphone 8" in title_lower:
+        return 3
 
     if "14 pro" in title_lower:
         return 10
@@ -75,7 +83,7 @@ def extract_model_score(title: str):
     if "11" in title_lower:
         return 6
     if "se" in title_lower:
-        return 3
+        return 4
 
     return 5
 
@@ -83,42 +91,45 @@ def extract_model_score(title: str):
 def extract_condition_score(title: str):
     title_lower = title.lower()
 
-    if "brand new" in title_lower or "new" in title_lower:
+    if "brand new" in title_lower:
         return 5
     if "very good" in title_lower:
-        return 3
+        return 4
     if "good" in title_lower:
-        return 2
+        return 3
     if "refurbished" in title_lower:
-        return 1
+        return 2
     if "used" in title_lower:
-        return 1
+        return 2
 
-    return 2
+    return 3
 
 
 def calculate_score(item, min_price):
     price = item["price"]
     title = item["title"]
 
-    # 1️⃣ Price Score (0–10 scale)
-    price_difference_ratio = (price - min_price) / min_price if min_price > 0 else 0
-    price_score = max(0, 10 - (price_difference_ratio * 5))
+    # 🔹 Price Score (0–10, capped impact)
+    if min_price > 0:
+        ratio = price / min_price
+        price_score = max(0, 10 - min(ratio - 1, 2) * 3)
+    else:
+        price_score = 5
 
-    # 2️⃣ Model Score (0–10)
+    # 🔹 Model Score (0–10)
     model_score = extract_model_score(title)
 
-    # 3️⃣ Condition Score (0–5)
+    # 🔹 Condition Score (0–5)
     condition_score = extract_condition_score(title)
 
-    # Weighted Final Score
+    # 🔥 Weighted Final Score
     final_score = (
-        price_score * 0.4 +
-        model_score * 0.4 +
+        price_score * 0.3 +
+        model_score * 0.5 +
         condition_score * 0.2
     )
 
-    item["score"] = round(final_score * 10, 2)  # Scale to 100
+    item["score"] = round(final_score * 10, 2)
     return item
 
 
