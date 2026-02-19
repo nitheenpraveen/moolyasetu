@@ -22,9 +22,19 @@ export default function NirnayaPage() {
     }
   }
 
+  function formatCurrency(value: any) {
+    const number = Number(value);
+    if (isNaN(number)) return value;
+
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(number);
+  }
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50 flex flex-col items-center p-8">
-      
+
       {/* Background SVG */}
       <div className="absolute inset-0 -z-10">
         <img src="/assets/abstract_shapes.svg" alt="Background Shapes" className="w-full h-full object-cover" />
@@ -52,38 +62,49 @@ export default function NirnayaPage() {
         </button>
       </div>
 
-      {/* Loading & Error */}
+      {/* Loading Spinner */}
       {loading && (
-        <p className="text-center text-gray-600 animate-fadeIn delay-400">Fetching results...</p>
+        <div className="flex flex-col items-center mt-6">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-700"></div>
+          <p className="text-gray-600 mt-2">Fetching best deals...</p>
+        </div>
       )}
+
+      {/* Error */}
       {error && (
-        <p className="text-center text-red-600 animate-fadeIn delay-400">{error}</p>
+        <p className="text-center text-red-600 mt-4">{error}</p>
       )}
 
       {/* Results */}
       {results && (
-        <div className="max-w-3xl w-full mx-auto bg-white shadow-2xl rounded-lg p-6 animate-fadeIn delay-400">
-          
+        <div className="max-w-3xl w-full mx-auto bg-white shadow-2xl rounded-lg p-6 mt-6">
+
           {/* Best Option */}
           {results.best_option && (
-            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded flex flex-col">
-              <h2 className="text-2xl font-bold text-green-700 mb-2 flex items-center">
-                <img src="/assets/product_icon.svg" alt="Best Deal" className="w-8 h-8 mr-2" />
+            <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
+              <h2 className="text-2xl font-bold text-green-700 mb-2">
                 Best Deal
               </h2>
-              <p className="font-semibold">{results.best_option.site} — {results.best_option.price}</p>
-              {results.best_option.rating && (
-                <p className="text-yellow-600">Rating: {results.best_option.rating} ⭐</p>
+
+              {results.best_option.image && (
+                <img
+                  src={results.best_option.image}
+                  alt="Best Product"
+                  className="w-40 h-40 object-contain mb-3"
+                />
               )}
-              {results.best_option.reviews && (
-                <p className="text-gray-500">{results.best_option.reviews} reviews</p>
-              )}
+
+              <p className="font-semibold">
+                {results.best_option.site} —{" "}
+                {formatCurrency(results.best_option.price)}
+              </p>
+
               {results.best_option.link && (
                 <a
                   href={results.best_option.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline mt-1"
+                  className="text-blue-600 hover:underline mt-1 block"
                 >
                   View Product
                 </a>
@@ -92,39 +113,61 @@ export default function NirnayaPage() {
           )}
 
           {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center">
-            <img src="/assets/product_icon.svg" alt="All Results" className="w-6 h-6 mr-2" />
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">
             All Results
           </h2>
+
           <ul className="divide-y divide-gray-200">
             {Array.isArray(results.all_results) &&
               results.all_results.map((r: any, i: number) => (
-                <li key={i} className="py-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium flex items-center">
-                      <img src="/assets/product_icon.svg" alt="Product" className="w-5 h-5 mr-1" />
-                      {r.site}
-                    </span>
-                    <span>{r.price || r.error}</span>
-                  </div>
-                  {r.title && <p className="text-gray-600">{r.title}</p>}
-                  {r.rating && <p className="text-yellow-600">Rating: {r.rating} ⭐</p>}
-                  {r.reviews && <p className="text-gray-500">{r.reviews} reviews</p>}
-                  {r.link && (
-                    <a
-                      href={r.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      View Product
-                    </a>
+                <li key={i} className="py-4 flex gap-4">
+
+                  {r.image && (
+                    <img
+                      src={r.image}
+                      alt="Product"
+                      className="w-24 h-24 object-contain"
+                    />
                   )}
+
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-medium">
+                        {r.site}
+                      </span>
+                      <span>
+                        {formatCurrency(r.price) || r.error}
+                      </span>
+                    </div>
+
+                    {r.title && (
+                      <p className="text-gray-600 text-sm mb-1">
+                        {r.title}
+                      </p>
+                    )}
+
+                    {r.link && (
+                      <a
+                        href={r.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        View Product
+                      </a>
+                    )}
+                  </div>
                 </li>
               ))}
           </ul>
         </div>
       )}
+
+      {/* Footer Disclaimer */}
+      <footer className="text-center text-sm text-gray-600 mt-12 border-t pt-4">
+        Data provided by eBay API. Prices may vary and are subject to change.
+      </footer>
+
     </div>
   );
 }
