@@ -47,7 +47,6 @@ export async function GET(req: NextRequest) {
         item.offer?.extracted_price ||
         null;
 
-      // fallback string parsing
       if (!extractedPrice && item.offer?.price) {
         const clean = item.offer.price.replace(
           /[^0-9.]/g,
@@ -56,7 +55,7 @@ export async function GET(req: NextRequest) {
         extractedPrice = Number(clean);
       }
 
-      // Ignore unrealistic monthly EMI prices
+      // Ignore EMI/monthly pricing
       if (extractedPrice && extractedPrice < 100) {
         extractedPrice = null;
       }
@@ -73,13 +72,34 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Remove products without valid price
+    /* =============================
+       Remove Restored / Junk
+    ============================== */
+
     const filtered = normalized.filter(
-      (item) => item.price > 0
+      (item) =>
+        item.price > 0 &&
+        !item.title.toLowerCase().includes("restored") &&
+        !item.title.toLowerCase().includes("refurbished") &&
+        !item.title.toLowerCase().includes("used")
     );
 
     /* =============================
-       Value Score Engine
+       Model Boost (Newer > Older)
+    ============================== */
+
+    function getModelBoost(title: string) {
+      const t = title.toLowerCase();
+
+      if (t.includes("iphone 17")) return 1.2;
+      if (t.includes("iphone 16")) return 1.15;
+      if (t.includes("iphone 15")) return 1.1;
+      if (t.includes("iphone 14")) return 1.05;
+      return 1;
+    }
+
+    /* =============================
+       Smart Value Score
     ============================== */
 
     const enhanced = filtered.map((item) => {
@@ -87,19 +107,28 @@ export async function GET(req: NextRequest) {
         item.reviews + 1
       );
 
-      const valueScore =
+      const baseScore =
         (item.rating * reviewWeight) /
         item.price;
 
+      const boostedScore =
+        baseScore * getModelBoost(item.title);
+
       return {
         ...item,
-        valueScore: Number(valueScore.toFixed(3)),
+        valueScore: Number(
+          boostedScore.toFixed(3)
+        ),
       };
     });
 
     enhanced.sort(
       (a, b) => b.valueScore - a.valueScore
     );
+
+    /* =============================
+       Final Response
+    ============================== */
 
     return NextResponse.json({
       query: product,
