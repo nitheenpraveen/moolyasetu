@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q");
+  const product = searchParams.get("product");
 
-  if (!query) {
-    return NextResponse.json({ error: "Missing query" }, { status: 400 });
+  if (!product) {
+    return NextResponse.json({ error: "Missing product" }, { status: 400 });
   }
 
   try {
@@ -28,9 +28,9 @@ export async function GET(req: Request) {
     const tokenData = await tokenRes.json();
     const token = tokenData.access_token;
 
-    // 2️⃣ Search eBay (India marketplace)
+    // 2️⃣ Search eBay India
     const searchRes = await fetch(
-      `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${query}&limit=10`,
+      `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${product}&limit=10`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -44,29 +44,32 @@ export async function GET(req: Request) {
 
     const products =
       data.itemSummaries?.map((item: any) => ({
+        site: "eBay",
         title: item.title,
         price: parseFloat(item.price?.value || 0),
-        currency: item.price?.currency,
         image: item.image?.imageUrl || "",
-        url: item.itemWebUrl,
+        link: item.itemWebUrl,
       })) || [];
 
-    // 3️⃣ Clean + filter
-    const cleanProducts = products
-      .filter((p: any) =>
-        p.title.toLowerCase().includes(query.toLowerCase())
-      )
-      .filter(
-        (p: any) =>
-          !p.title.toLowerCase().includes("refurbished") &&
-          !p.title.toLowerCase().includes("broken")
-      );
+    if (products.length === 0) {
+      return NextResponse.json({
+        best_option: null,
+        all_results: [],
+      });
+    }
 
-    // 4️⃣ Sort by price
-    cleanProducts.sort((a: any, b: any) => a.price - b.price);
+    // Sort lowest price first
+    products.sort((a: any, b: any) => a.price - b.price);
 
-    return NextResponse.json(cleanProducts);
-  } catch (err) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json({
+      best_option: products[0],
+      all_results: products,
+    });
+
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }
