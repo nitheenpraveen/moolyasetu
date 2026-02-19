@@ -14,40 +14,67 @@ export async function GET(req: Request) {
   const product = searchParams.get("product")?.trim();
 
   if (!product) {
-    return NextResponse.json({ all_results: [], best_option: null, message: "No product specified" });
+    return NextResponse.json({
+      all_results: [],
+      best_option: null,
+      message: "No product specified",
+    });
   }
 
-  // eBay Sandbox API URL
-  const EBAY_SANDBOX_TOKEN = process.env.EBAY_OAUTH_TOKEN_SANDBOX;
-  if (!EBAY_SANDBOX_TOKEN) {
-    return NextResponse.json({ all_results: [], best_option: null, message: "Missing eBay sandbox token" });
+  const EBAY_TOKEN = process.env.EBAY_OAUTH_TOKEN;
+
+  if (!EBAY_TOKEN) {
+    return NextResponse.json({
+      all_results: [],
+      best_option: null,
+      message: "Missing eBay production token",
+    });
   }
 
-  const url = `https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product)}&limit=5`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${EBAY_SANDBOX_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await fetch(
+      `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+        product
+      )}&limit=5`,
+      {
+        headers: {
+          Authorization: `Bearer ${EBAY_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error("eBay API failed");
+    }
 
     const data = await res.json();
 
-    const results: ProductResult[] = (data.itemSummaries || []).map((item: any) => ({
-      site: "eBay Sandbox",
-      title: item.title || "No title",
-      price: item.price?.value ? `₹${item.price.value}` : "N/A",
-      rating: "N/A", // eBay Sandbox doesn’t provide ratings in API
-      reviews: "N/A",
-      link: item.itemWebUrl || "#",
-    }));
+    const results: ProductResult[] = (data.itemSummaries || []).map(
+      (item: any) => ({
+        site: "eBay",
+        title: item.title || "No title",
+        price: item.price?.value
+          ? `${item.price.value} ${item.price.currency || ""}`
+          : "N/A",
+        rating: "N/A",
+        reviews: "N/A",
+        link: item.itemWebUrl || "#",
+      })
+    );
 
-    // Determine best option (lowest price)
     const best_option = results.reduce<ProductResult | null>((best, curr) => {
-      const currPrice = parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-      const bestPrice = best ? parseFloat(best.price.replace(/[^0-9.]/g, "")) || Infinity : Infinity;
+      const currPrice =
+        parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
+      const bestPrice = best
+        ? parseFloat(best.price.replace(/[^0-9.]/g, "")) || Infinity
+        : Infinity;
 
       return currPrice < bestPrice ? curr : best;
     }, null);
@@ -55,6 +82,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ all_results: results, best_option });
   } catch (err) {
     console.error("eBay API error:", err);
-    return NextResponse.json({ all_results: [], best_option: null, message: "Failed to fetch from eBay" });
+
+    return NextResponse.json({
+      all_results: [],
+      best_option: null,
+      message: "Failed to fetch from eBay",
+    });
   }
 }
