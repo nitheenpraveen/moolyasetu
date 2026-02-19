@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
+         "X-EBAY-C-MARKETPLACE-ID": "EBAY-US",
         },
       }
     );
