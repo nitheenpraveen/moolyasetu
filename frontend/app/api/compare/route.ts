@@ -29,15 +29,18 @@ export async function GET(req: NextRequest) {
       }
     );
 
+    console.log("Amazon Response OK:", amazonRes.ok);
+    console.log("Amazon Status:", amazonRes.status);
+
     let amazonData: any = [];
+
     if (amazonRes.ok) {
       const json = await amazonRes.json();
-      amazonData = json?.data?.slice(0, 5) || [];
+      amazonData = json?.data?.slice(0, 8) || [];
     }
 
     /* ===========================
-       2️⃣ Structured Fallback (DummyJSON)
-       Used if Amazon fails or empty
+       2️⃣ Fallback (DummyJSON)
     ============================ */
     let fallbackData: any = [];
 
@@ -50,13 +53,14 @@ export async function GET(req: NextRequest) {
 
       if (dummyRes.ok) {
         const dummyJson = await dummyRes.json();
-        fallbackData = dummyJson?.products?.slice(0, 5) || [];
+        fallbackData = dummyJson?.products?.slice(0, 8) || [];
       }
     }
 
     /* ===========================
-       3️⃣ Normalized Unified Format
+       3️⃣ Normalize Format
     ============================ */
+
     const normalizedAmazon = amazonData.map((item: any) => ({
       source: "Amazon",
       title: item.product_title,
@@ -79,34 +83,83 @@ export async function GET(req: NextRequest) {
       url: "#",
     }));
 
-    const allProducts =
+    let allProducts =
       normalizedAmazon.length > 0
         ? normalizedAmazon
         : normalizedFallback;
 
     /* ===========================
-       4️⃣ UNIQUE VALUE ENGINE 🔥
-       (This is what makes your site different)
+       4️⃣ FILTER OUT ACCESSORIES
+       🔥 Makes your platform intelligent
+    ============================ */
+
+    const bannedWords = [
+      "case",
+      "cover",
+      "charger",
+      "cable",
+      "adapter",
+      "lamp",
+      "battery",
+      "protector",
+      "stand",
+      "holder",
+    ];
+
+    allProducts = allProducts.filter((item: any) => {
+      const title = item.title.toLowerCase();
+      return !bannedWords.some((word) => title.includes(word));
+    });
+
+    /* ===========================
+       5️⃣ MODEL INTELLIGENCE
+       Penalize very old phones
+    ============================ */
+
+    function getModelScore(title: string) {
+      const t = title.toLowerCase();
+
+      if (t.includes("iphone 15")) return 10;
+      if (t.includes("iphone 14")) return 9;
+      if (t.includes("iphone 13")) return 8;
+      if (t.includes("iphone 12")) return 7;
+      if (t.includes("iphone 11")) return 6;
+      if (t.includes("iphone x")) return 4;
+      if (t.includes("iphone 8")) return 2;
+      if (t.includes("iphone 7")) return 1;
+      if (t.includes("iphone 6")) return 0;
+
+      return 5;
+    }
+
+    /* ===========================
+       6️⃣ UNIQUE VALUE ENGINE 🔥
     ============================ */
 
     const enhancedProducts = allProducts.map((item: any) => {
-      const valueScore =
+      const modelScore = getModelScore(item.title);
+
+      const reviewWeight = Math.log(item.reviews + 1);
+
+      const baseValue =
         item.price > 0
-          ? (
-              (item.rating * Math.log(item.reviews + 1)) /
-              item.price
-            ).toFixed(3)
-          : "0";
+          ? (item.rating * reviewWeight) / item.price
+          : 0;
+
+      // Final weighted score
+      const valueScore =
+        baseValue * 0.5 +
+        (modelScore / 10) * 0.3 +
+        (item.rating / 5) * 0.2;
 
       return {
         ...item,
-        valueScore: Number(valueScore),
+        valueScore: Number(valueScore.toFixed(3)),
       };
     });
 
     /* ===========================
-       5️⃣ Sort by BEST VALUE
-       Not just lowest price!
+       7️⃣ Sort by Smart Value
     ============================ */
 
     enhancedProducts.sort(
