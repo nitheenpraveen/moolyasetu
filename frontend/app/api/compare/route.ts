@@ -1,106 +1,72 @@
 import { NextResponse } from "next/server";
 
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
-
-async function getEbayToken() {
-  const now = Date.now();
-
-  if (cachedToken && now < tokenExpiry) {
-    return cachedToken;
-  }
-
-  const clientId = process.env.EBAY_CLIENT_ID;
-  const clientSecret = process.env.EBAY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error("Missing eBay production credentials");
-  }
-
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-
-  const response = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error("Failed to obtain eBay token");
-  }
-
-  cachedToken = data.access_token;
-  tokenExpiry = Date.now() + data.expires_in * 1000 - 60000; // refresh 1 min early
-
-  return cachedToken;
-}
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const product = searchParams.get("product")?.trim();
+  const query = searchParams.get("q");
 
-  if (!product) {
-    return NextResponse.json({
-      all_results: [],
-      best_option: null,
-      message: "No product specified",
-    });
+  if (!query) {
+    return NextResponse.json({ error: "Missing query" }, { status: 400 });
   }
 
   try {
-    const token = await getEbayToken();
+    // 1️⃣ Get OAuth token
+    const tokenRes = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
+      method: "POST",
+      headers: {
+        Authorization:
+          "Basic " +
+          Buffer.from(
+            process.env.EBAY_CLIENT_ID +
+              ":" +
+              process.env.EBAY_CLIENT_SECRET
+          ).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+    });
 
-    const res = await fetch(
-      `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
-        product
-      )}&limit=5`,
+    const tokenData = await tokenRes.json();
+    const token = tokenData.access_token;
+
+    // 2️⃣ Search eBay (India marketplace)
+    const searchRes = await fetch(
+      `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${query}&limit=10`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
         },
       }
     );
 
-    if (!res.ok) {
-      throw new Error("eBay search failed");
-    }
+    const data = await searchRes.json();
 
-    const data = await res.json();
+    const products =
+      data.itemSummaries?.map((item: any) => ({
+        title: item.title,
+        price: parseFloat(item.price?.value || 0),
+        currency: item.price?.currency,
+        image: item.image?.imageUrl || "",
+        url: item.itemWebUrl,
+      })) || [];
 
-    const results = (data.itemSummaries || []).map((item: any) => ({
-      site: "eBay",
-      title: item.title || "No title",
-      price: item.price?.value
-        ? `${item.price.value} ${item.price.currency}`
-        : "N/A",
-      rating: "N/A",
-      reviews: "N/A",
-      link: item.itemWebUrl || "#",
-    }));
+    // 3️⃣ Clean + filter
+    const cleanProducts = products
+      .filter((p: any) =>
+        p.title.toLowerCase().includes(query.toLowerCase())
+      )
+      .filter(
+        (p: any) =>
+          !p.title.toLowerCase().includes("refurbished") &&
+          !p.title.toLowerCase().includes("broken")
+      );
 
-    const best_option = results.reduce((best: any, curr: any) => {
-      const currPrice =
-        parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-      const bestPrice =
-        best ? parseFloat(best.price.replace(/[^0-9.]/g, "")) || Infinity : Infinity;
+    // 4️⃣ Sort by price
+    cleanProducts.sort((a: any, b: any) => a.price - b.price);
 
-      return currPrice < bestPrice ? curr : best;
-    }, null);
-
-    return NextResponse.json({ all_results: results, best_option });
-  } catch (error) {
-    console.error("Production eBay error:", error);
-
-    return NextResponse.json({
-      all_results: [],
-      best_option: null,
-      message: "Failed to fetch from eBay",
-    });
+    return NextResponse.json(cleanProducts);
+  } catch (err) {
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
