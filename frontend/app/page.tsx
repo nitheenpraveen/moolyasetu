@@ -11,9 +11,11 @@ export default function NirnayaPage() {
     if (!product) return;
     setLoading(true);
     setError("");
+
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(product)}`);
       const data = await res.json();
+      console.log("API RESPONSE:", data); // helpful debug
       setResults(data);
     } catch {
       setError("Failed to fetch results.");
@@ -33,26 +35,26 @@ export default function NirnayaPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50 flex flex-col items-center p-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-50 flex flex-col items-center p-8">
 
-      {/* Background SVG */}
-      <div className="absolute inset-0 -z-10">
-        <img src="/assets/abstract_shapes.svg" alt="Background Shapes" className="w-full h-full object-cover" />
+      {/* HEADER */}
+      <div className="text-center mb-10">
+        <h1 className="text-5xl font-extrabold text-purple-700 mb-3">
+          Nirṇaya
+        </h1>
+        <p className="text-gray-700 text-lg max-w-xl mx-auto">
+          Compare product prices instantly and find the best deal across marketplaces.
+        </p>
       </div>
 
-      {/* Title */}
-      <h1 className="text-5xl font-extrabold text-center text-purple-700 mb-8 animate-fadeIn">
-        Nirṇaya
-      </h1>
-
-      {/* Search Bar */}
-      <div className="flex justify-center mb-6 animate-fadeIn delay-200">
+      {/* SEARCH BAR */}
+      <div className="flex justify-center mb-8 w-full max-w-xl">
         <input
           type="text"
           value={product}
           onChange={(e) => setProduct(e.target.value)}
-          placeholder="Enter product name..."
-          className="border rounded-l-lg p-3 w-80 focus:outline-none focus:ring-2 focus:ring-purple-400"
+          placeholder="Search for a product (e.g. iPhone 15)"
+          className="border border-purple-300 text-black rounded-l-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
         <button
           onClick={fetchComparison}
@@ -62,28 +64,28 @@ export default function NirnayaPage() {
         </button>
       </div>
 
-      {/* Loading Spinner */}
+      {/* LOADING */}
       {loading && (
-        <div className="flex flex-col items-center mt-6">
+        <div className="flex flex-col items-center mt-4">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-700"></div>
           <p className="text-gray-600 mt-2">Fetching best deals...</p>
         </div>
       )}
 
-      {/* Error */}
+      {/* ERROR */}
       {error && (
-        <p className="text-center text-red-600 mt-4">{error}</p>
+        <p className="text-red-600 mt-4">{error}</p>
       )}
 
-      {/* Results */}
-      {results && (
-        <div className="max-w-3xl w-full mx-auto bg-white shadow-2xl rounded-lg p-6 mt-6">
+      {/* RESULTS */}
+      {results && !loading && (
+        <div className="max-w-4xl w-full bg-white shadow-xl rounded-lg p-6 mt-6">
 
-          {/* Best Option */}
+          {/* BEST OPTION */}
           {results.best_option && (
             <div className="mb-6 p-4 border-l-4 border-green-500 bg-green-50 rounded">
-              <h2 className="text-2xl font-bold text-green-700 mb-2">
-                Best Deal
+              <h2 className="text-2xl font-bold text-green-700 mb-3">
+                🏆 Best Deal
               </h2>
 
               {results.best_option.image && (
@@ -94,7 +96,7 @@ export default function NirnayaPage() {
                 />
               )}
 
-              <p className="font-semibold">
+              <p className="font-semibold text-lg">
                 {results.best_option.site} —{" "}
                 {formatCurrency(results.best_option.price)}
               </p>
@@ -104,7 +106,7 @@ export default function NirnayaPage() {
                   href={results.best_option.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline mt-1 block"
+                  className="text-blue-600 hover:underline mt-2 block"
                 >
                   View Product
                 </a>
@@ -112,14 +114,14 @@ export default function NirnayaPage() {
             </div>
           )}
 
-          {/* All Results */}
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">
+          {/* ALL RESULTS */}
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
             All Results
           </h2>
 
-          <ul className="divide-y divide-gray-200">
-            {Array.isArray(results.all_results) &&
-              results.all_results.map((r: any, i: number) => (
+          {Array.isArray(results.all_results) && results.all_results.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {results.all_results.map((r: any, i: number) => (
                 <li key={i} className="py-4 flex gap-4">
 
                   {r.image && (
@@ -135,8 +137,8 @@ export default function NirnayaPage() {
                       <span className="font-medium">
                         {r.site}
                       </span>
-                      <span>
-                        {formatCurrency(r.price) || r.error}
+                      <span className="font-semibold">
+                        {formatCurrency(r.price)}
                       </span>
                     </div>
 
@@ -159,12 +161,15 @@ export default function NirnayaPage() {
                   </div>
                 </li>
               ))}
-          </ul>
+            </ul>
+          ) : (
+            <p className="text-gray-500">No results found.</p>
+          )}
         </div>
       )}
 
-      {/* Footer Disclaimer */}
-      <footer className="text-center text-sm text-gray-600 mt-12 border-t pt-4">
+      {/* FOOTER */}
+      <footer className="text-center text-sm text-gray-600 mt-12 border-t pt-4 w-full max-w-4xl">
         Data provided by eBay API. Prices may vary and are subject to change.
       </footer>
 
