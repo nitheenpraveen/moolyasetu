@@ -14,10 +14,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    /* ===========================
-       1️⃣ Google Shopping Search
-    ============================ */
-
     const res = await fetch(
       `https://real-time-product-search.p.rapidapi.com/search-v2?q=${encodeURIComponent(
         product
@@ -32,101 +28,68 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    console.log("Search Response OK:", res.ok);
     console.log("Search Status:", res.status);
 
     let products: any[] = [];
 
     if (res.ok) {
       const json = await res.json();
-      products = json?.data?.products?.slice(0, 15) || [];
+      products = json?.data?.products?.slice(0, 20) || [];
     }
 
-    /* ===========================
-       2️⃣ Fallback (if API fails)
-    ============================ */
+    /* =============================
+       Normalize & Clean Pricing
+    ============================== */
 
-    if (!res.ok || products.length === 0) {
-      const dummyRes = await fetch(
-        `https://dummyjson.com/products/search?q=${encodeURIComponent(
-          product
-        )}`
-      );
-
-      if (dummyRes.ok) {
-        const dummyJson = await dummyRes.json();
-        products = dummyJson?.products?.slice(0, 15) || [];
-      }
-    }
-
-    /* ===========================
-       3️⃣ Normalize Data Properly
-    ============================ */
-
-    const normalized = products.map((item: any) => ({
-      source: res.ok ? "Google Shopping" : "Structured Store",
-
-      title: item.product_title || item.title || "Unknown",
-
-      price: Number(
+    const normalized = products.map((item: any) => {
+      let extractedPrice =
         item.offer?.primary?.extracted_price ||
-          item.offer?.extracted_price ||
-          (item.offer?.price
-            ? item.offer.price.replace(/[^0-9.]/g, "")
-            : null) ||
-          item.price ||
-          0
-      ),
+        item.offer?.extracted_price ||
+        null;
 
-      rating:
-        Number(item.product_rating) ||
-        Number(item.rating) ||
-        0,
+      // fallback string parsing
+      if (!extractedPrice && item.offer?.price) {
+        const clean = item.offer.price.replace(
+          /[^0-9.]/g,
+          ""
+        );
+        extractedPrice = Number(clean);
+      }
 
-      reviews:
-        Number(item.product_num_reviews) ||
-        Number(item.reviews) ||
-        Number(item.stock) ||
-        0,
+      // Ignore unrealistic monthly EMI prices
+      if (extractedPrice && extractedPrice < 100) {
+        extractedPrice = null;
+      }
 
-      image: item.product_photo || item.thumbnail || null,
-
-      url: item.product_url || "#",
-    }));
-
-    /* ===========================
-       4️⃣ Remove Junk / Accessories
-    ============================ */
-
-    const bannedWords = [
-      "case",
-      "cover",
-      "charger",
-      "cable",
-      "adapter",
-      "protector",
-      "stand",
-      "holder",
-    ];
-
-    const filtered = normalized.filter((item) => {
-      const title = item.title.toLowerCase();
-      return !bannedWords.some((word) =>
-        title.includes(word)
-      );
+      return {
+        source: "Google Shopping",
+        title: item.product_title || "Unknown",
+        price: extractedPrice || 0,
+        rating: Number(item.product_rating) || 0,
+        reviews:
+          Number(item.product_num_reviews) || 0,
+        image: item.product_photo || null,
+        url: item.product_url || "#",
+      };
     });
 
-    /* ===========================
-       5️⃣ Smart Value Score
-    ============================ */
+    // Remove products without valid price
+    const filtered = normalized.filter(
+      (item) => item.price > 0
+    );
+
+    /* =============================
+       Value Score Engine
+    ============================== */
 
     const enhanced = filtered.map((item) => {
-      const reviewWeight = Math.log(item.reviews + 1);
+      const reviewWeight = Math.log(
+        item.reviews + 1
+      );
 
       const valueScore =
-        item.price > 0
-          ? (item.rating * reviewWeight) / item.price
-          : 0;
+        (item.rating * reviewWeight) /
+        item.price;
 
       return {
         ...item,
@@ -137,10 +100,6 @@ export async function GET(req: NextRequest) {
     enhanced.sort(
       (a, b) => b.valueScore - a.valueScore
     );
-
-    /* ===========================
-       6️⃣ Final Response
-    ============================ */
 
     return NextResponse.json({
       query: product,
