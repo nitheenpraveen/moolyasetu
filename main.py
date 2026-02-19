@@ -38,17 +38,60 @@ app.add_middleware(
 # eBay search placeholder
 # Replace this later with real eBay integration
 # -----------------------------
+import os
+import base64
+
+async def get_ebay_token():
+    async with httpx.AsyncClient() as client:
+        credentials = f"{os.getenv('EBAY_CLIENT_ID')}:{os.getenv('EBAY_CLIENT_SECRET')}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+
+        response = await client.post(
+            "https://api.ebay.com/identity/v1/oauth2/token",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": f"Basic {encoded_credentials}"
+            },
+            data="grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope"
+        )
+
+        response.raise_for_status()
+        return response.json()["access_token"]
+
+
 async def fetch_ebay_results(product: str):
-    # Temporary mock data
-    return [
-        {
-            "title": f"{product} Example Item",
-            "price": 1999,
-            "currency": "INR",
-            "seller": "demo_seller",
-            "rating": 95
-        }
-    ]
+    token = await get_ebay_token()
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "https://api.ebay.com/buy/browse/v1/item_summary/search",
+            headers={
+                "Authorization": f"Bearer {token}"
+            },
+            params={
+                "q": product,
+                "limit": 10
+            }
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        results = []
+
+        for item in data.get("itemSummaries", []):
+            results.append({
+                "title": item.get("title"),
+                "price": item.get("price", {}).get("value"),
+                "currency": item.get("price", {}).get("currency"),
+                "image": item.get("image", {}).get("imageUrl"),
+                "item_url": item.get("itemWebUrl"),
+                "seller": item.get("seller", {}).get("username"),
+                "seller_rating": item.get("seller", {}).get("feedbackPercentage")
+            })
+
+        return results
+
 
 
 # -----------------------------
