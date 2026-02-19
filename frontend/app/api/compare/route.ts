@@ -1,13 +1,44 @@
 import { NextResponse } from "next/server";
 
-type ProductResult = {
-  site: string;
-  title: string;
-  price: string;
-  rating: string;
-  reviews: string;
-  link: string;
-};
+let cachedToken: string | null = null;
+let tokenExpiry: number = 0;
+
+async function getEbayToken() {
+  const now = Date.now();
+
+  if (cachedToken && now < tokenExpiry) {
+    return cachedToken;
+  }
+
+  const clientId = process.env.EBAY_CLIENT_ID;
+  const clientSecret = process.env.EBAY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing eBay production credentials");
+  }
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+  const response = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("Failed to obtain eBay token");
+  }
+
+  cachedToken = data.access_token;
+  tokenExpiry = Date.now() + data.expires_in * 1000 - 60000; // refresh 1 min early
+
+  return cachedToken;
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -21,67 +52,50 @@ export async function GET(req: Request) {
     });
   }
 
-  const EBAY_TOKEN = process.env.EBAY_OAUTH_TOKEN;
-
-  if (!EBAY_TOKEN) {
-    return NextResponse.json({
-      all_results: [],
-      best_option: null,
-      message: "Missing eBay production token",
-    });
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
   try {
+    const token = await getEbayToken();
+
     const res = await fetch(
       `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
         product
       )}&limit=5`,
       {
         headers: {
-          Authorization: `Bearer ${EBAY_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
       }
     );
 
-    clearTimeout(timeout);
-
     if (!res.ok) {
-      throw new Error("eBay API failed");
+      throw new Error("eBay search failed");
     }
 
     const data = await res.json();
 
-    const results: ProductResult[] = (data.itemSummaries || []).map(
-      (item: any) => ({
-        site: "eBay",
-        title: item.title || "No title",
-        price: item.price?.value
-          ? `${item.price.value} ${item.price.currency || ""}`
-          : "N/A",
-        rating: "N/A",
-        reviews: "N/A",
-        link: item.itemWebUrl || "#",
-      })
-    );
+    const results = (data.itemSummaries || []).map((item: any) => ({
+      site: "eBay",
+      title: item.title || "No title",
+      price: item.price?.value
+        ? `${item.price.value} ${item.price.currency}`
+        : "N/A",
+      rating: "N/A",
+      reviews: "N/A",
+      link: item.itemWebUrl || "#",
+    }));
 
-    const best_option = results.reduce<ProductResult | null>((best, curr) => {
+    const best_option = results.reduce((best: any, curr: any) => {
       const currPrice =
         parseFloat(curr.price.replace(/[^0-9.]/g, "")) || Infinity;
-      const bestPrice = best
-        ? parseFloat(best.price.replace(/[^0-9.]/g, "")) || Infinity
-        : Infinity;
+      const bestPrice =
+        best ? parseFloat(best.price.replace(/[^0-9.]/g, "")) || Infinity : Infinity;
 
       return currPrice < bestPrice ? curr : best;
     }, null);
 
     return NextResponse.json({ all_results: results, best_option });
-  } catch (err) {
-    console.error("eBay API error:", err);
+  } catch (error) {
+    console.error("Production eBay error:", error);
 
     return NextResponse.json({
       all_results: [],
