@@ -15,17 +15,19 @@ export async function GET(req: NextRequest) {
 
   try {
     /* ===========================
-       1️⃣ Amazon (RapidAPI v2)
+       1️⃣ Amazon (RapidAPI - /search)
     ============================ */
+
     const amazonRes = await fetch(
-      `https://real-time-product-search.p.rapidapi.com/search-v2?q=${encodeURIComponent(
+      `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(
         product
-      )}&country=us&language=en&limit=10`,
+      )}&country=us&language=en`,
       {
         method: "GET",
         headers: {
           "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": "real-time-product-search.p.rapidapi.com",
+          "X-RapidAPI-Host":
+            "real-time-product-search.p.rapidapi.com",
         },
       }
     );
@@ -43,6 +45,7 @@ export async function GET(req: NextRequest) {
     /* ===========================
        2️⃣ Fallback (Only if Amazon fails)
     ============================ */
+
     let fallbackData: any[] = [];
 
     if (amazonData.length === 0) {
@@ -107,8 +110,10 @@ export async function GET(req: NextRequest) {
     ];
 
     allProducts = allProducts.filter((item: any) => {
-      const title = item.title.toLowerCase();
-      return !bannedWords.some((word) => title.includes(word));
+      const title = item.title?.toLowerCase() || "";
+      return !bannedWords.some((word) =>
+        title.includes(word)
+      );
     });
 
     /* ===========================
@@ -136,8 +141,8 @@ export async function GET(req: NextRequest) {
     ============================ */
 
     const enhancedProducts = allProducts.map((item: any) => {
-      const modelScore = getModelScore(item.title);
-      const reviewWeight = Math.log(item.reviews + 1);
+      const modelScore = getModelScore(item.title || "");
+      const reviewWeight = Math.log((item.reviews || 0) + 1);
 
       const baseValue =
         item.price > 0
@@ -160,7 +165,8 @@ export async function GET(req: NextRequest) {
     ============================ */
 
     enhancedProducts.sort(
-      (a: any, b: any) => b.valueScore - a.valueScore
+      (a: any, b: any) =>
+        (b.valueScore || 0) - (a.valueScore || 0)
     );
 
     return NextResponse.json({
@@ -171,6 +177,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Comparison API Error:", error);
+
     return NextResponse.json(
       { error: "Failed to fetch product comparison." },
       { status: 500 }
