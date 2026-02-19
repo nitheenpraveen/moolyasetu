@@ -15,13 +15,14 @@ export async function GET(req: NextRequest) {
 
   try {
     /* ===========================
-       1️⃣ Amazon (via RapidAPI)
+       1️⃣ Amazon (RapidAPI v2)
     ============================ */
     const amazonRes = await fetch(
-      `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(
+      `https://real-time-product-search.p.rapidapi.com/search-v2?q=${encodeURIComponent(
         product
-      )}&country=us&language=en`,
+      )}&country=us&language=en&limit=10`,
       {
+        method: "GET",
         headers: {
           "X-RapidAPI-Key": RAPIDAPI_KEY,
           "X-RapidAPI-Host": "real-time-product-search.p.rapidapi.com",
@@ -32,17 +33,17 @@ export async function GET(req: NextRequest) {
     console.log("Amazon Response OK:", amazonRes.ok);
     console.log("Amazon Status:", amazonRes.status);
 
-    let amazonData: any = [];
+    let amazonData: any[] = [];
 
     if (amazonRes.ok) {
       const json = await amazonRes.json();
-      amazonData = json?.data?.slice(0, 8) || [];
+      amazonData = json?.data?.products?.slice(0, 10) || [];
     }
 
     /* ===========================
-       2️⃣ Fallback (DummyJSON)
+       2️⃣ Fallback (Only if Amazon fails)
     ============================ */
-    let fallbackData: any = [];
+    let fallbackData: any[] = [];
 
     if (amazonData.length === 0) {
       const dummyRes = await fetch(
@@ -53,12 +54,12 @@ export async function GET(req: NextRequest) {
 
       if (dummyRes.ok) {
         const dummyJson = await dummyRes.json();
-        fallbackData = dummyJson?.products?.slice(0, 8) || [];
+        fallbackData = dummyJson?.products?.slice(0, 10) || [];
       }
     }
 
     /* ===========================
-       3️⃣ Normalize Format
+       3️⃣ Normalize Data
     ============================ */
 
     const normalizedAmazon = amazonData.map((item: any) => ({
@@ -89,8 +90,7 @@ export async function GET(req: NextRequest) {
         : normalizedFallback;
 
     /* ===========================
-       4️⃣ FILTER OUT ACCESSORIES
-       🔥 Makes your platform intelligent
+       4️⃣ Remove Accessories
     ============================ */
 
     const bannedWords = [
@@ -112,8 +112,7 @@ export async function GET(req: NextRequest) {
     });
 
     /* ===========================
-       5️⃣ MODEL INTELLIGENCE
-       Penalize very old phones
+       5️⃣ Model Intelligence
     ============================ */
 
     function getModelScore(title: string) {
@@ -133,12 +132,11 @@ export async function GET(req: NextRequest) {
     }
 
     /* ===========================
-       6️⃣ UNIQUE VALUE ENGINE 🔥
+       6️⃣ Smart Value Engine
     ============================ */
 
     const enhancedProducts = allProducts.map((item: any) => {
       const modelScore = getModelScore(item.title);
-
       const reviewWeight = Math.log(item.reviews + 1);
 
       const baseValue =
@@ -146,7 +144,6 @@ export async function GET(req: NextRequest) {
           ? (item.rating * reviewWeight) / item.price
           : 0;
 
-      // Final weighted score
       const valueScore =
         baseValue * 0.5 +
         (modelScore / 10) * 0.3 +
@@ -159,7 +156,7 @@ export async function GET(req: NextRequest) {
     });
 
     /* ===========================
-       7️⃣ Sort by Smart Value
+       7️⃣ Sort by Value
     ============================ */
 
     enhancedProducts.sort(
