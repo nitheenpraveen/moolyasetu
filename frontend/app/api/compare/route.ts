@@ -48,10 +48,7 @@ export async function GET(req: NextRequest) {
         null;
 
       if (!extractedPrice && item.offer?.price) {
-        const clean = item.offer.price.replace(
-          /[^0-9.]/g,
-          ""
-        );
+        const clean = item.offer.price.replace(/[^0-9.]/g, "");
         extractedPrice = Number(clean);
       }
 
@@ -65,23 +62,15 @@ export async function GET(req: NextRequest) {
         title: item.product_title || "Unknown",
         price: extractedPrice || 0,
         rating: Number(item.product_rating) || 0,
-        reviews:
-          Number(item.product_num_reviews) || 0,
+        reviews: Number(item.product_num_reviews) || 0,
         image: item.product_photo || null,
         url: item.product_url || "#",
       };
     });
 
-    /* =============================
-       Remove Restored / Junk
-    ============================== */
-
+    // Keep all valid priced items
     const filtered = normalized.filter(
-      (item) =>
-        item.price > 0 &&
-        !item.title.toLowerCase().includes("restored") &&
-        !item.title.toLowerCase().includes("refurbished") &&
-        !item.title.toLowerCase().includes("used")
+      (item) => item.price > 0
     );
 
     /* =============================
@@ -99,26 +88,37 @@ export async function GET(req: NextRequest) {
     }
 
     /* =============================
-       Smart Value Score
+       Condition Penalty
+    ============================== */
+
+    function getConditionPenalty(title: string) {
+      const t = title.toLowerCase();
+
+      if (t.includes("restored")) return 0.85;
+      if (t.includes("refurbished")) return 0.85;
+      if (t.includes("used")) return 0.75;
+
+      return 1;
+    }
+
+    /* =============================
+       Smart Value Score Engine
     ============================== */
 
     const enhanced = filtered.map((item) => {
-      const reviewWeight = Math.log(
-        item.reviews + 1
-      );
+      const reviewWeight = Math.log(item.reviews + 1);
 
       const baseScore =
-        (item.rating * reviewWeight) /
-        item.price;
+        (item.rating * reviewWeight) / item.price;
 
-      const boostedScore =
-        baseScore * getModelBoost(item.title);
+      const finalScore =
+        baseScore *
+        getModelBoost(item.title) *
+        getConditionPenalty(item.title);
 
       return {
         ...item,
-        valueScore: Number(
-          boostedScore.toFixed(3)
-        ),
+        valueScore: Number(finalScore.toFixed(3)),
       };
     });
 
