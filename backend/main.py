@@ -27,17 +27,35 @@ def search_tatacliq(product: str):
 def search_ajio(product: str):
     return {"site": "Ajio", "price": 480, "reviews": 4.1, "review_count": 250}
 
-# --- Scoring function ---
+
+# --- Enhanced Scoring Function ---
 def calculate_score(item, min_price):
+    # Price weight (cheapest gets highest score)
     price_score = 4 if item["price"] == min_price else 3
-    review_score = round((item["reviews"] / 5) * 4, 1)
-    quality_score = 2 if item["review_count"] > 1000 else (1 if item["review_count"] > 100 else 0)
-    item["score"] = price_score + review_score + quality_score
+
+    # Review rating weight (convert 5-star into 0-4 scale)
+    review_score = (item["reviews"] / 5) * 4
+
+    # Review count trust factor
+    if item["review_count"] > 1000:
+        quality_score = 2
+    elif item["review_count"] > 100:
+        quality_score = 1
+    else:
+        quality_score = 0
+
+    raw_score = price_score + review_score + quality_score
+
+    # Convert to percentage scale (0–100)
+    item["score"] = round((raw_score / 10) * 100, 2)
+
     return item
+
 
 # --- Compare endpoint ---
 @app.get("/compare")
 def compare_products(product: str = Query(..., description="Product name to search")):
+
     results = [
         search_amazon(product),
         search_flipkart(product),
@@ -50,10 +68,20 @@ def compare_products(product: str = Query(..., description="Product name to sear
     ]
 
     min_price = min(r["price"] for r in results)
+
     scored_results = [calculate_score(r, min_price) for r in results]
-    best = max(scored_results, key=lambda x: x["score"])
-    return {"best_option": best, "all_results": scored_results}
+
+    # Sort results by score (highest first)
+    sorted_results = sorted(scored_results, key=lambda x: x["score"], reverse=True)
+
+    best = sorted_results[0]
+
+    return {
+        "best_option": best,
+        "all_results": sorted_results
+    }
+
 
 @app.get("/")
 def root():
-    return {"message": "Product comparison API is live!"}
+    return {"message": "Product comparison AI engine is live!"}
