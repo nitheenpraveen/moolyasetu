@@ -31,10 +31,10 @@ export async function GET(req: NextRequest) {
 
     // ✅ If backend returns empty → use mock Flipkart + Myntra
     if (!backendData.length) {
-  const flipkart = await searchFlipkart(product);
-  const myntra = await searchMyntra(product);
+const flipkart = await searchFlipkart(product);
+const myntra = await searchMyntra(product);
 
-  return NextResponse.json({
+return NextResponse.json({
         results: [flipkart, myntra],
         source: "mock",
       });
