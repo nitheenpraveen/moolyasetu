@@ -5,7 +5,7 @@ import { useState } from "react";
 interface Product {
   site: string;
   title: string;
-  price: string;
+  price: number;
   link: string;
   confidence: number;
   forecast: string;
@@ -24,38 +24,56 @@ export default function ProductComparison() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <div className="max-w-3xl mx-auto p-6">
 
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search smarter..."
-        className="border p-2 w-full"
+        placeholder="Search smarter. Buy safer."
+        className="border p-3 w-full rounded"
       />
 
       <button
         onClick={handleSearch}
-        className="bg-blue-600 text-white p-2 mt-2"
+        className="bg-blue-600 text-white p-3 mt-3 rounded w-full"
       >
-        Compare
+        Compare Prices
       </button>
 
       {bestOption && (
-        <div className="bg-green-100 p-4 mt-4">
-          <h2>🔥 Best Trusted Deal</h2>
+        <div className="bg-green-100 p-4 mt-6 rounded">
+          <h2 className="text-xl font-bold mb-2">🔥 Best Trusted Deal</h2>
           <p>{bestOption.title}</p>
-          <p>Confidence: {bestOption.confidence}%</p>
-          <p>{bestOption.forecast}</p>
-          <a href={bestOption.link}>Buy Safely</a>
+          <p className="font-semibold">₹{bestOption.price}</p>
+          <p className="text-green-700 font-semibold">
+            Confidence: {bestOption.confidence}%
+          </p>
+          <p className="text-orange-600">{bestOption.forecast}</p>
+
+          <a
+            href={bestOption.link}
+            target="_blank"
+            className="text-blue-600 underline"
+          >
+            Buy Safely
+          </a>
         </div>
       )}
 
       {results.map((r, i) => (
-        <div key={i} className="border p-3 mt-2">
-          <p>{r.title}</p>
+        <div key={i} className="border p-4 mt-4 rounded">
+          <p className="font-medium">{r.title}</p>
           <p>₹{r.price}</p>
-          <p>Trust: {r.confidence}%</p>
-          <p>{r.forecast}</p>
+          <p className="text-green-700">Trust: {r.confidence}%</p>
+          <p className="text-orange-600">{r.forecast}</p>
+
+          <a
+            href={r.link}
+            target="_blank"
+            className="text-blue-600 underline"
+          >
+            View Deal
+          </a>
         </div>
       ))}
     </div>
