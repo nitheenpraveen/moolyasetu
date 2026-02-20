@@ -34,7 +34,7 @@ export default function MoolyaSetuLanding() {
           <div className="mt-10 text-sm text-gray-500">
             Built for smart budget shoppers who care about value and trust.
           </div>
-        </div>
+       </motion.div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
