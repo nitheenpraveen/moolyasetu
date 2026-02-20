@@ -7,7 +7,7 @@ export default function MoolyaSetuLanding() {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900">
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-12 items-center">
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -33,7 +33,7 @@ export default function MoolyaSetuLanding() {
           <div className="mt-10 text-sm text-gray-500">
             Built for smart budget shoppers who care about value and trust.
           </div>
-        </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
