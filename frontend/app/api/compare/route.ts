@@ -1,3 +1,5 @@
+import { getFlipkartProduct } from "@/extractor/flipkart";
+import { getMyntraProduct } from "@/extractor/myntra";
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
@@ -14,25 +16,46 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 🔥 Call YOUR FastAPI backend instead of Google
+    // 🔥 Call your FastAPI backend first
     const res = await fetch(
       `${BACKEND_URL}/compare?product=${encodeURIComponent(product)}`,
       { cache: "no-store" }
     );
 
-    if (!res.ok) {
-      throw new Error("Backend error");
+    let backendData = [];
+
+    if (res.ok) {
+      const data = await res.json();
+      backendData = data?.results || [];
     }
 
-    const data = await res.json();
+    // ✅ If backend returns empty → use mock Flipkart + Myntra
+    if (!backendData.length) {
+      const flipkart = await getFlipkartProduct(product);
+      const myntra = await getMyntraProduct(product);
 
-    return NextResponse.json(data);
+      return NextResponse.json({
+        results: [flipkart, myntra],
+        source: "mock",
+      });
+    }
+
+    // ✅ Backend has data
+    return NextResponse.json({
+      results: backendData,
+      source: "backend",
+    });
+
   } catch (error) {
     console.error("Compare API Error:", error);
 
-    return NextResponse.json(
-      { error: "Failed to fetch comparison results." },
-      { status: 500 }
-    );
+    // ✅ Fallback if backend completely fails
+    const flipkart = await getFlipkartProduct(product);
+    const myntra = await getMyntraProduct(product);
+
+    return NextResponse.json({
+      results: [flipkart, myntra],
+      source: "fallback",
+    });
   }
 }
