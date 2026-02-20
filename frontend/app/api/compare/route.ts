@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY!;
+const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -14,133 +14,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // 🔥 Call YOUR FastAPI backend instead of Google
     const res = await fetch(
-      `https://real-time-product-search.p.rapidapi.com/search-v2?q=${encodeURIComponent(
-        product
-      )}&country=us&language=en`,
-      {
-        method: "GET",
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host":
-            "real-time-product-search.p.rapidapi.com",
-        },
-      }
+      `${BACKEND_URL}/compare?product=${encodeURIComponent(product)}`,
+      { cache: "no-store" }
     );
 
-    console.log("Search Status:", res.status);
-
-    let products: any[] = [];
-
-    if (res.ok) {
-      const json = await res.json();
-      products = json?.data?.products?.slice(0, 20) || [];
+    if (!res.ok) {
+      throw new Error("Backend error");
     }
 
-    /* =============================
-       Normalize & Clean Pricing
-    ============================== */
+    const data = await res.json();
 
-    const normalized = products.map((item: any) => {
-      let extractedPrice =
-        item.offer?.primary?.extracted_price ||
-        item.offer?.extracted_price ||
-        null;
-
-      if (!extractedPrice && item.offer?.price) {
-        const clean = item.offer.price.replace(/[^0-9.]/g, "");
-        extractedPrice = Number(clean);
-      }
-
-      // Ignore EMI/monthly pricing
-      if (extractedPrice && extractedPrice < 100) {
-        extractedPrice = null;
-      }
-
-      return {
-        source: "Google Shopping",
-        title: item.product_title || "Unknown",
-        price: extractedPrice || 0,
-        rating: Number(item.product_rating) || 0,
-        reviews: Number(item.product_num_reviews) || 0,
-        image: item.product_photo || null,
-        url: item.product_url || "#",
-      };
-    });
-
-    // Keep all valid priced items
-    const filtered = normalized.filter(
-      (item) => item.price > 0
-    );
-
-    /* =============================
-       Model Boost (Newer > Older)
-    ============================== */
-
-    function getModelBoost(title: string) {
-      const t = title.toLowerCase();
-
-      if (t.includes("iphone 17")) return 1.2;
-      if (t.includes("iphone 16")) return 1.15;
-      if (t.includes("iphone 15")) return 1.1;
-      if (t.includes("iphone 14")) return 1.05;
-      return 1;
-    }
-
-    /* =============================
-       Condition Penalty
-    ============================== */
-
-    function getConditionPenalty(title: string) {
-      const t = title.toLowerCase();
-
-      if (t.includes("restored")) return 0.85;
-      if (t.includes("refurbished")) return 0.85;
-      if (t.includes("used")) return 0.75;
-
-      return 1;
-    }
-
-    /* =============================
-       Smart Value Score Engine
-    ============================== */
-
-    const enhanced = filtered.map((item) => {
-      const reviewWeight = Math.log(item.reviews + 1);
-
-      const baseScore =
-        (item.rating * reviewWeight) / item.price;
-
-      const finalScore =
-        baseScore *
-        getModelBoost(item.title) *
-        getConditionPenalty(item.title);
-
-      return {
-        ...item,
-        valueScore: Number(finalScore.toFixed(3)),
-      };
-    });
-
-    enhanced.sort(
-      (a, b) => b.valueScore - a.valueScore
-    );
-
-    /* =============================
-       Final Response
-    ============================== */
-
-    return NextResponse.json({
-      query: product,
-      totalResults: enhanced.length,
-      bestValue: enhanced[0] || null,
-      products: enhanced,
-    });
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("Compare API Error:", error);
 
     return NextResponse.json(
-      { error: "Failed to fetch product comparison." },
+      { error: "Failed to fetch comparison results." },
       { status: 500 }
     );
   }
