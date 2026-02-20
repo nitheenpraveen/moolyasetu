@@ -23,7 +23,7 @@ def get_db():
         db.close()
 
 
-# 🔥 Product price history (needed for fake discount detection)
+# 🔥 Product price history (core for intelligence)
 class ProductPriceHistory(Base):
     __tablename__ = "product_price_history"
 
@@ -32,14 +32,3 @@ class ProductPriceHistory(Base):
     site = Column(String)
     price = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
-
-
-# 🔥 Alerts
-class PriceAlert(Base):
-    __tablename__ = "price_alerts"
-
-    id = Column(Integer, primary_key=True, index=True)
-    product = Column(String)
-    site = Column(String)
-    alert_type = Column(String)
-    active = Column(Integer)
