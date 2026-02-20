@@ -5,5 +5,8 @@
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14"
   }
 }
