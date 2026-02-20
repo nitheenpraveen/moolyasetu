@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ShieldCheck, Smile, Wallet } from "lucide-react";
@@ -7,11 +8,11 @@ export default function MoolyaSetuLanding() {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 text-gray-900">
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-12 items-center">
-        <div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+       <motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+           transition={{ duration: 0.6 }}
+>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight">
             Shop with confidence. <br /> Feel good about every purchase.
           </h1>
