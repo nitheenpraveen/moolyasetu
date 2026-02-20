@@ -1,6 +1,6 @@
-import { searchFlipkart } from "@/extractor/flipkart";
-import { searchMyntra } from "@/extractor/myntra";
 import { NextRequest, NextResponse } from "next/server";
+import { getFlipkartProduct } from "@/extractor/flipkart";
+import { getMyntraProduct } from "@/extractor/myntra";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
 
@@ -16,46 +16,28 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 🔥 Call your FastAPI backend first
+    // 🔥 Primary → FastAPI backend
     const res = await fetch(
       `${BACKEND_URL}/compare?product=${encodeURIComponent(product)}`,
       { cache: "no-store" }
     );
 
-    let backendData = [];
-
     if (res.ok) {
       const data = await res.json();
-      backendData = data?.results || [];
+      return NextResponse.json(data);
     }
 
-    // ✅ If backend returns empty → use mock Flipkart + Myntra
-    if (!backendData.length) {
-const flipkart = await searchFlipkart(product);
-const myntra = await searchMyntra(product);
-
-return NextResponse.json({
-        results: [flipkart, myntra],
-        source: "mock",
-      });
-    }
-
-    // ✅ Backend has data
-    return NextResponse.json({
-      results: backendData,
-      source: "backend",
-    });
-
+    throw new Error("Backend failed");
   } catch (error) {
-    console.error("Compare API Error:", error);
+    console.error("Backend down → fallback", error);
 
-    // ✅ Fallback if backend completely fails
+    // 🔥 Fallback scrapers
     const flipkart = await getFlipkartProduct(product);
     const myntra = await getMyntraProduct(product);
 
     return NextResponse.json({
+      fallback: true,
       results: [flipkart, myntra],
-      source: "fallback",
     });
   }
 }
