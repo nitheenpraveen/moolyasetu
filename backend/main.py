@@ -1,40 +1,42 @@
 import os
 import requests
-from fastapi import FastAPI, Query
+import re
+from fastapi import FastAPI, Query, HTTPException
+from datetime import datetime
 
 app = FastAPI()
 
+# 🔐 ENV
 EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
-
-# 🔥 Amazon Affiliate Tag
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
 
-
-# 🔐 Get eBay OAuth Token
+# ==============================
+# 🔐 EBAY TOKEN
+# ==============================
 def get_ebay_token():
     auth = requests.auth.HTTPBasicAuth(EBAY_CLIENT_ID, EBAY_CLIENT_SECRET)
 
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
     data = {
         "grant_type": "client_credentials",
         "scope": "https://api.ebay.com/oauth/api_scope",
     }
 
-    response = requests.post(
+    res = requests.post(
         "https://api.ebay.com/identity/v1/oauth2/token",
         headers=headers,
         data=data,
         auth=auth,
+        timeout=10,
     )
 
-    return response.json().get("access_token")
+    return res.json().get("access_token")
 
 
-# 🔎 Search eBay
+# ==============================
+# 🛒 EBAY SEARCH
+# ==============================
 def search_ebay(product: str):
     token = get_ebay_token()
 
@@ -43,55 +45,75 @@ def search_ebay(product: str):
         "X-EBAY-C-MARKETPLACE-ID": "EBAY-US",
     }
 
-    response = requests.get(
+    res = requests.get(
         "https://api.ebay.com/buy/browse/v1/item_summary/search",
         headers=headers,
         params={"q": product, "limit": 10},
+        timeout=10,
     )
 
-    data = response.json()
-
+    data = res.json()
     products = []
 
     for item in data.get("itemSummaries", []):
+        price = float(item.get("price", {}).get("value", 0))
+
         products.append({
             "site": "eBay",
             "title": item.get("title"),
-            "price": float(item.get("price", {}).get("value", 0)),
+            "price": price,
             "link": item.get("itemWebUrl"),
         })
 
     return products
 
 
-# 🛒 Search Amazon (Affiliate Enabled)
+# ==============================
+# 🛍️ AMAZON SEARCH (REAL PRICE)
+# ==============================
+def extract_price(text):
+    match = re.search(r'₹\s?([\d,]+)', text)
+    if match:
+        return float(match.group(1).replace(",", ""))
+    return 0
+
+
 def search_amazon(product: str):
-    search_url = f"https://www.amazon.in/s?k={product}"
+    url = f"https://www.amazon.in/s?k={product.replace(' ', '+')}"
 
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
 
     try:
-        response = requests.get(search_url, headers=headers, timeout=10)
+        res = requests.get(url, headers=headers, timeout=10)
 
-        if response.status_code != 200:
+        if res.status_code != 200:
             return []
 
-        import re
+        html = res.text
 
-        # Extract ASINs
-        asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', response.text)))
+        asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
 
         products = []
 
-        for asin in asins[:5]:
+        for asin in asins[:6]:
+
+            # 🔥 Extract price block
+            price_block = re.search(
+                rf'{asin}".*?₹\s?[\d,]+',
+                html,
+                re.DOTALL
+            )
+
+            price = extract_price(price_block.group()) if price_block else 0
+
             affiliate_link = f"https://www.amazon.in/dp/{asin}?tag={AMAZON_TAG}"
 
             products.append({
                 "site": "Amazon",
                 "title": f"Amazon Product {asin}",
-                "price": 0,
+                "price": price,
                 "link": affiliate_link,
             })
 
@@ -102,31 +124,44 @@ def search_amazon(product: str):
         return []
 
 
-# 🧠 SMART SCORING (same as before)
+# ==============================
+# 🧠 AI SCORING
+# ==============================
 def extract_model_score(title: str):
-    title_lower = title.lower()
+    title = title.lower()
 
-    if "iphone 6" in title_lower: return 1
-    if "iphone 7" in title_lower: return 2
-    if "iphone 8" in title_lower: return 3
-    if "14 pro" in title_lower: return 10
-    if "14" in title_lower: return 9
-    if "13" in title_lower: return 8
-    if "12" in title_lower: return 7
-    if "11" in title_lower: return 6
-    if "se" in title_lower: return 4
+    scores = {
+        "iphone 6": 1,
+        "iphone 7": 2,
+        "iphone 8": 3,
+        "se": 4,
+        "11": 6,
+        "12": 7,
+        "13": 8,
+        "14": 9,
+        "14 pro": 10,
+    }
+
+    for key, value in scores.items():
+        if key in title:
+            return value
 
     return 5
 
 
 def extract_condition_score(title: str):
-    title_lower = title.lower()
+    title = title.lower()
 
-    if "brand new" in title_lower: return 5
-    if "very good" in title_lower: return 4
-    if "good" in title_lower: return 3
-    if "refurbished" in title_lower: return 2
-    if "used" in title_lower: return 2
+    if "brand new" in title:
+        return 5
+    if "very good" in title:
+        return 4
+    if "good" in title:
+        return 3
+    if "refurbished" in title:
+        return 2
+    if "used" in title:
+        return 2
 
     return 3
 
@@ -135,44 +170,72 @@ def calculate_score(item, min_price):
     price = item["price"]
     title = item["title"]
 
-    if min_price > 0:
+    # 🔥 Price importance increased
+    if min_price > 0 and price > 0:
         ratio = price / min_price
-        price_score = max(0, 10 - min(ratio - 1, 2) * 3)
+        price_score = max(0, 10 - (ratio - 1) * 4)
     else:
         price_score = 5
 
     model_score = extract_model_score(title)
     condition_score = extract_condition_score(title)
 
-    final_score = (
-        price_score * 0.3 +
-        model_score * 0.5 +
+    final = (
+        price_score * 0.5 +
+        model_score * 0.3 +
         condition_score * 0.2
     )
 
-    item["score"] = round(final_score * 10, 2)
+    item["score"] = round(final * 10, 2)
     return item
 
 
-# 🔥 Compare Endpoint (still only eBay for now)
+# ==============================
+# 🔥 CLICK TRACKING (REVENUE)
+# ==============================
+@app.get("/track-click")
+def track_click(link: str, product: str):
+
+    # 👉 Save to DB later
+    print({
+        "product": product,
+        "link": link,
+        "time": datetime.utcnow()
+    })
+
+    return {"redirect": link}
+
+
+# ==============================
+# 🔥 PRICE ALERTS READY
+# ==============================
+@app.get("/price-alert")
+def price_alert(product: str, target: float):
+
+    # Future DB logic
+    return {
+        "message": f"Alert set for {product} at ₹{target}"
+    }
+
+
+# ==============================
+# 🚀 MAIN COMPARE
+# ==============================
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
 
-    ebay_results = search_ebay(product)
-    amazon_results = search_amazon(product)
+    ebay = search_ebay(product)
+    amazon = search_amazon(product)
 
-    results = ebay_results + amazon_results
+    results = ebay + amazon
 
     if not results:
-        return {"best_option": None, "all_results": []}
+        raise HTTPException(404, "No products found")
 
-    # Only price > 0 for scoring
     valid_prices = [r["price"] for r in results if r["price"] > 0]
-
     min_price = min(valid_prices) if valid_prices else 1
 
     scored = [calculate_score(r, min_price) for r in results]
-
     sorted_results = sorted(scored, key=lambda x: x["score"], reverse=True)
 
     return {
@@ -183,4 +246,4 @@ def compare_products(product: str = Query(...)):
 
 @app.get("/")
 def root():
-    return {"message": "AI comparison backend running 🚀"}
+    return {"message": "MoolyaSetu AI engine running 🚀"}
