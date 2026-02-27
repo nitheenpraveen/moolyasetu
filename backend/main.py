@@ -13,13 +13,23 @@ app = FastAPI()
 
 EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
-
-# 🔥 Amazon Affiliate
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
+
+# ==============================
+# PROXY SYSTEM (Anti-block)
+# ==============================
+
+PROXIES = [
+    # add paid rotating proxies later
+    None
+]
+
+def get_proxy():
+    return {"http": PROXIES[0], "https": PROXIES[0]} if PROXIES[0] else None
 
 
 # ==============================
-# eBay OAuth Token
+# EBAY TOKEN
 # ==============================
 
 def get_ebay_token():
@@ -28,9 +38,7 @@ def get_ebay_token():
         EBAY_CLIENT_SECRET
     )
 
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     data = {
         "grant_type": "client_credentials",
@@ -48,7 +56,7 @@ def get_ebay_token():
 
 
 # ==============================
-# Search eBay
+# EBAY SEARCH
 # ==============================
 
 def search_ebay(product: str):
@@ -56,7 +64,7 @@ def search_ebay(product: str):
 
     headers = {
         "Authorization": f"Bearer {token}",
-        "X-EBAY-C-MARKETPLACE-ID": "EBAY-US",
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
     }
 
     response = requests.get(
@@ -65,11 +73,9 @@ def search_ebay(product: str):
         params={"q": product, "limit": 10},
     )
 
-    data = response.json()
-
     products = []
 
-    for item in data.get("itemSummaries", []):
+    for item in response.json().get("itemSummaries", []):
         price = float(item.get("price", {}).get("value", 0))
 
         products.append({
@@ -83,36 +89,46 @@ def search_ebay(product: str):
 
 
 # ==============================
-# Search Amazon (Affiliate)
+# AMAZON SCRAPER (PROXY + AFFILIATE)
 # ==============================
 
 def extract_amazon_price(html: str):
-    price_patterns = [
+    patterns = [
         r'"priceAmount":"([\d\.]+)"',
         r'₹\s?([\d,]+)'
     ]
 
-    for pattern in price_patterns:
-        match = re.search(pattern, html)
-        if match:
-            return float(match.group(1).replace(",", ""))
-
+    for p in patterns:
+        m = re.search(p, html)
+        if m:
+            return float(m.group(1).replace(",", ""))
     return 0
 
 
 def search_amazon(product: str):
+
     url = f"https://www.amazon.in/s?k={product}"
 
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "Chrome/120.0 Safari/537.36"
+        ),
+        "Accept-Language": "en-IN,en;q=0.9",
+    }
 
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(
+            url,
+            headers=headers,
+            proxies=get_proxy(),
+            timeout=10
+        )
 
         if response.status_code != 200:
             return []
 
         html = response.text
-
         asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
 
         products = []
@@ -120,10 +136,14 @@ def search_amazon(product: str):
         for asin in asins[:5]:
             product_url = f"https://www.amazon.in/dp/{asin}"
 
-            # 🔥 Fetch product page to extract price
-            page = requests.get(product_url, headers=headers, timeout=10)
-            price = extract_amazon_price(page.text)
+            page = requests.get(
+                product_url,
+                headers=headers,
+                proxies=get_proxy(),
+                timeout=10
+            )
 
+            price = extract_amazon_price(page.text)
             affiliate = f"{product_url}?tag={AMAZON_TAG}"
 
             products.append({
@@ -141,64 +161,30 @@ def search_amazon(product: str):
 
 
 # ==============================
-# AI SCORING SYSTEM
+# AI SCORING (UPGRADED)
 # ==============================
 
-def extract_model_score(title: str):
-    t = title.lower()
-
-    if "iphone 14 pro" in t: return 10
-    if "iphone 14" in t: return 9
-    if "iphone 13" in t: return 8
-    if "iphone 12" in t: return 7
-    if "iphone 11" in t: return 6
-    if "iphone se" in t: return 5
-    if "iphone 8" in t: return 3
-    if "iphone 7" in t: return 2
-    if "iphone 6" in t: return 1
-
-    return 5
-
-
-def extract_condition_score(title: str):
-    t = title.lower()
-
-    if "brand new" in t: return 5
-    if "excellent" in t: return 4
-    if "very good" in t: return 4
-    if "good" in t: return 3
-    if "refurbished" in t: return 2
-    if "used" in t: return 2
-
-    return 3
-
-
 def calculate_score(item, min_price):
-    price = item["price"]
-    title = item["title"]
 
-    # Price weight
+    price = item["price"]
+
     if min_price > 0:
         ratio = price / min_price
-        price_score = max(0, 10 - min(ratio - 1, 2) * 3)
+        price_score = max(0, 10 - (ratio - 1) * 5)
     else:
         price_score = 5
 
-    model_score = extract_model_score(title)
-    condition_score = extract_condition_score(title)
+    # Amazon trust boost
+    trust = 2 if item["site"] == "Amazon" else 1
 
-    final = (
-        price_score * 0.35 +
-        model_score * 0.45 +
-        condition_score * 0.2
-    )
+    final = (price_score * 0.7) + (trust * 3)
 
     item["score"] = round(final * 10, 2)
     return item
 
 
 # ==============================
-# Compare API
+# COMPARE PRODUCTS
 # ==============================
 
 @app.get("/compare")
@@ -225,20 +211,63 @@ def compare_products(product: str = Query(...)):
 
 
 # ==============================
-# CLICK TRACKING (Affiliate Revenue)
+# CLICK TRACKING + REVENUE
 # ==============================
+
+CLICK_LOG = []
 
 @app.get("/track-click")
 def track_click(link: str, product: str):
 
-    # 🔥 Replace later with database
-    print({
+    CLICK_LOG.append({
         "product": product,
         "link": link,
         "time": datetime.utcnow()
     })
 
     return RedirectResponse(url=link)
+
+
+# ==============================
+# USER DASHBOARD
+# ==============================
+
+@app.get("/dashboard")
+def dashboard():
+
+    total_clicks = len(CLICK_LOG)
+
+    amazon_clicks = len([c for c in CLICK_LOG if "amazon" in c["link"]])
+    ebay_clicks = len([c for c in CLICK_LOG if "ebay" in c["link"]])
+
+    return {
+        "total_clicks": total_clicks,
+        "amazon_clicks": amazon_clicks,
+        "ebay_clicks": ebay_clicks,
+    }
+
+
+# ==============================
+# PRICE ALERT SYSTEM
+# ==============================
+
+PRICE_ALERTS = []
+
+@app.get("/set-alert")
+def set_alert(product: str, target_price: float):
+
+    PRICE_ALERTS.append({
+        "product": product,
+        "target": target_price,
+        "time": datetime.utcnow()
+    })
+
+    return {"status": "alert_set"}
+
+
+@app.get("/alerts")
+def get_alerts():
+    return PRICE_ALERTS
 
 
 # ==============================
