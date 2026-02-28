@@ -12,6 +12,9 @@ app = FastAPI()
 # =====================================================
 # 🔥 DATABASE CONNECTION (HEROKU + SQLALCHEMY SAFE)
 # =====================================================
+# =====================================================
+# 🔥 DATABASE CONNECTION (SAFE FOR LOCAL + HEROKU)
+# =====================================================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -21,7 +24,7 @@ engine = None
 SessionLocal = None
 
 if DATABASE_URL:
-    # Fix legacy Heroku postgres:// issue
+
     DATABASE_URL = DATABASE_URL.replace(
         "postgres://",
         "postgresql+psycopg2://"
@@ -35,19 +38,15 @@ if DATABASE_URL:
             pool_pre_ping=True,
         )
 
-        SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=engine,
-        )
+        SessionLocal = sessionmaker(bind=engine)
 
-        print("✅ PostgreSQL connected successfully")
+        print("✅ PostgreSQL connected")
 
     except Exception as e:
         print("❌ Database connection failed:", str(e))
 
 else:
-    print("⚠️ No DATABASE_URL found — running without DB")
+    print("⚠️ No DATABASE_URL found — running without DB (dev mode)")
 
 
 # =====================================================
