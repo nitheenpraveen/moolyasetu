@@ -5,12 +5,71 @@ from datetime import datetime
 from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
 
+# ==============================
+# FASTAPI APP
+# ==============================
 app = FastAPI()
+
+# ==============================
+# POSTGRESQL DATABASE CONNECTION
+# ==============================
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    Text
+)
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL not set")
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,
+    max_overflow=20
+)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+Base = declarative_base()
+
+# ==============================
+# DATABASE MODELS
+# ==============================
+class Click(Base):
+    __tablename__ = "clicks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product = Column(String)
+    link = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PriceAlert(Base):
+    __tablename__ = "price_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product = Column(String)
+    target_price = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 # ==============================
 # ENV VARIABLES
 # ==============================
-
 EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
@@ -18,9 +77,8 @@ AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
 # ==============================
 # PROXY SYSTEM (Anti-block)
 # ==============================
-
 PROXIES = [
-    # add paid rotating proxies later
+    # Add BrightData / SmartProxy / Oxylabs later
     None
 ]
 
@@ -31,7 +89,6 @@ def get_proxy():
 # ==============================
 # EBAY TOKEN
 # ==============================
-
 def get_ebay_token():
     auth = requests.auth.HTTPBasicAuth(
         EBAY_CLIENT_ID,
@@ -58,7 +115,6 @@ def get_ebay_token():
 # ==============================
 # EBAY SEARCH
 # ==============================
-
 def search_ebay(product: str):
     token = get_ebay_token()
 
@@ -89,9 +145,8 @@ def search_ebay(product: str):
 
 
 # ==============================
-# AMAZON SCRAPER (PROXY + AFFILIATE)
+# AMAZON SCRAPER
 # ==============================
-
 def extract_amazon_price(html: str):
     patterns = [
         r'"priceAmount":"([\d\.]+)"',
@@ -161,9 +216,8 @@ def search_amazon(product: str):
 
 
 # ==============================
-# AI SCORING (UPGRADED)
+# AI SCORING
 # ==============================
-
 def calculate_score(item, min_price):
 
     price = item["price"]
@@ -174,7 +228,6 @@ def calculate_score(item, min_price):
     else:
         price_score = 5
 
-    # Amazon trust boost
     trust = 2 if item["site"] == "Amazon" else 1
 
     final = (price_score * 0.7) + (trust * 3)
@@ -186,7 +239,6 @@ def calculate_score(item, min_price):
 # ==============================
 # COMPARE PRODUCTS
 # ==============================
-
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
 
@@ -211,69 +263,88 @@ def compare_products(product: str = Query(...)):
 
 
 # ==============================
-# CLICK TRACKING + REVENUE
+# CLICK TRACKING
 # ==============================
-
-CLICK_LOG = []
-
 @app.get("/track-click")
 def track_click(link: str, product: str):
 
-    CLICK_LOG.append({
-        "product": product,
-        "link": link,
-        "time": datetime.utcnow()
-    })
+    db = SessionLocal()
+
+    click = Click(
+        product=product,
+        link=link
+    )
+
+    db.add(click)
+    db.commit()
+    db.close()
 
     return RedirectResponse(url=link)
 
 
 # ==============================
-# USER DASHBOARD
+# DASHBOARD
 # ==============================
-
 @app.get("/dashboard")
 def dashboard():
 
-    total_clicks = len(CLICK_LOG)
+    db = SessionLocal()
 
-    amazon_clicks = len([c for c in CLICK_LOG if "amazon" in c["link"]])
-    ebay_clicks = len([c for c in CLICK_LOG if "ebay" in c["link"]])
+    total = db.query(Click).count()
+    amazon = db.query(Click).filter(Click.link.contains("amazon")).count()
+    ebay = db.query(Click).filter(Click.link.contains("ebay")).count()
+
+    db.close()
 
     return {
-        "total_clicks": total_clicks,
-        "amazon_clicks": amazon_clicks,
-        "ebay_clicks": ebay_clicks,
+        "total_clicks": total,
+        "amazon_clicks": amazon,
+        "ebay_clicks": ebay,
     }
 
 
 # ==============================
-# PRICE ALERT SYSTEM
+# PRICE ALERTS
 # ==============================
-
-PRICE_ALERTS = []
-
 @app.get("/set-alert")
 def set_alert(product: str, target_price: float):
 
-    PRICE_ALERTS.append({
-        "product": product,
-        "target": target_price,
-        "time": datetime.utcnow()
-    })
+    db = SessionLocal()
+
+    alert = PriceAlert(
+        product=product,
+        target_price=target_price
+    )
+
+    db.add(alert)
+    db.commit()
+    db.close()
 
     return {"status": "alert_set"}
 
 
 @app.get("/alerts")
 def get_alerts():
-    return PRICE_ALERTS
+
+    db = SessionLocal()
+    alerts = db.query(PriceAlert).all()
+
+    data = [
+        {
+            "product": a.product,
+            "target": a.target_price,
+            "created": a.created_at,
+        }
+        for a in alerts
+    ]
+
+    db.close()
+    return data
 
 
 # ==============================
 # ROOT
 # ==============================
-
 @app.get("/")
 def root():
     return {"message": "MoolyaSetu AI backend running 🚀"}
