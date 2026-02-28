@@ -5,14 +5,12 @@ from datetime import datetime
 from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
 
-# ==============================
-# FASTAPI APP
-# ==============================
 app = FastAPI()
 
 # ==============================
 # POSTGRESQL DATABASE CONNECTION
 # ==============================
+
 from sqlalchemy import (
     create_engine,
     Column,
@@ -32,44 +30,21 @@ if not DATABASE_URL:
 engine = create_engine(
     DATABASE_URL,
     pool_size=10,
-    max_overflow=20
+    max_overflow=20,
 )
 
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine,
 )
 
 Base = declarative_base()
 
 # ==============================
-# DATABASE MODELS
-# ==============================
-class Click(Base):
-    __tablename__ = "clicks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    product = Column(String)
-    link = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-class PriceAlert(Base):
-    __tablename__ = "price_alerts"
-
-    id = Column(Integer, primary_key=True, index=True)
-    product = Column(String)
-    target_price = Column(Float)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-# ==============================
 # ENV VARIABLES
 # ==============================
+
 EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
@@ -77,10 +52,8 @@ AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
 # ==============================
 # PROXY SYSTEM (Anti-block)
 # ==============================
-PROXIES = [
-    # Add BrightData / SmartProxy / Oxylabs later
-    None
-]
+
+PROXIES = [None]
 
 def get_proxy():
     return {"http": PROXIES[0], "https": PROXIES[0]} if PROXIES[0] else None
@@ -89,64 +62,83 @@ def get_proxy():
 # ==============================
 # EBAY TOKEN
 # ==============================
+
 def get_ebay_token():
-    auth = requests.auth.HTTPBasicAuth(
-        EBAY_CLIENT_ID,
-        EBAY_CLIENT_SECRET
-    )
+    try:
+        auth = requests.auth.HTTPBasicAuth(
+            EBAY_CLIENT_ID,
+            EBAY_CLIENT_SECRET
+        )
 
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-    data = {
-        "grant_type": "client_credentials",
-        "scope": "https://api.ebay.com/oauth/api_scope",
-    }
+        data = {
+            "grant_type": "client_credentials",
+            "scope": "https://api.ebay.com/oauth/api_scope",
+        }
 
-    response = requests.post(
-        "https://api.ebay.com/identity/v1/oauth2/token",
-        headers=headers,
-        data=data,
-        auth=auth,
-    )
+        response = requests.post(
+            "https://api.ebay.com/identity/v1/oauth2/token",
+            headers=headers,
+            data=data,
+            auth=auth,
+            timeout=10,
+        )
 
-    return response.json().get("access_token")
+        return response.json().get("access_token")
+
+    except Exception as e:
+        print("EBAY TOKEN ERROR:", e)
+        return None
 
 
 # ==============================
 # EBAY SEARCH
 # ==============================
+
 def search_ebay(product: str):
-    token = get_ebay_token()
+    try:
+        token = get_ebay_token()
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
-    }
+        if not token:
+            print("No eBay token")
+            return []
 
-    response = requests.get(
-        "https://api.ebay.com/buy/browse/v1/item_summary/search",
-        headers=headers,
-        params={"q": product, "limit": 10},
-    )
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
+        }
 
-    products = []
+        response = requests.get(
+            "https://api.ebay.com/buy/browse/v1/item_summary/search",
+            headers=headers,
+            params={"q": product, "limit": 10},
+            timeout=10,
+        )
 
-    for item in response.json().get("itemSummaries", []):
-        price = float(item.get("price", {}).get("value", 0))
+        products = []
 
-        products.append({
-            "site": "eBay",
-            "title": item.get("title"),
-            "price": price,
-            "link": item.get("itemWebUrl"),
-        })
+        for item in response.json().get("itemSummaries", []):
+            price = float(item.get("price", {}).get("value", 0))
 
-    return products
+            products.append({
+                "site": "eBay",
+                "title": item.get("title"),
+                "price": price,
+                "link": item.get("itemWebUrl"),
+            })
+
+        return products
+
+    except Exception as e:
+        print("EBAY ERROR:", e)
+        return []
 
 
 # ==============================
 # AMAZON SCRAPER
 # ==============================
+
 def extract_amazon_price(html: str):
     patterns = [
         r'"priceAmount":"([\d\.]+)"',
@@ -162,17 +154,17 @@ def extract_amazon_price(html: str):
 
 def search_amazon(product: str):
 
-    url = f"https://www.amazon.in/s?k={product}"
-
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "Chrome/120.0 Safari/537.36"
-        ),
-        "Accept-Language": "en-IN,en;q=0.9",
-    }
-
     try:
+        url = f"https://www.amazon.in/s?k={product}"
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "Chrome/120.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-IN,en;q=0.9",
+        }
+
         response = requests.get(
             url,
             headers=headers,
@@ -181,10 +173,13 @@ def search_amazon(product: str):
         )
 
         if response.status_code != 200:
+            print("Amazon blocked or failed")
             return []
 
         html = response.text
         asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
+
+        print("DEBUG ASINS:", asins)
 
         products = []
 
@@ -199,6 +194,7 @@ def search_amazon(product: str):
             )
 
             price = extract_amazon_price(page.text)
+
             affiliate = f"{product_url}?tag={AMAZON_TAG}"
 
             products.append({
@@ -218,8 +214,8 @@ def search_amazon(product: str):
 # ==============================
 # AI SCORING
 # ==============================
-def calculate_score(item, min_price):
 
+def calculate_score(item, min_price):
     price = item["price"]
 
     if min_price > 0:
@@ -229,7 +225,6 @@ def calculate_score(item, min_price):
         price_score = 5
 
     trust = 2 if item["site"] == "Amazon" else 1
-
     final = (price_score * 0.7) + (trust * 3)
 
     item["score"] = round(final * 10, 2)
@@ -239,11 +234,15 @@ def calculate_score(item, min_price):
 # ==============================
 # COMPARE PRODUCTS
 # ==============================
+
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
 
     ebay = search_ebay(product)
     amazon = search_amazon(product)
+
+    print("DEBUG EBAY:", ebay)
+    print("DEBUG AMAZON:", amazon)
 
     results = ebay + amazon
 
@@ -265,86 +264,17 @@ def compare_products(product: str = Query(...)):
 # ==============================
 # CLICK TRACKING
 # ==============================
+
 @app.get("/track-click")
 def track_click(link: str, product: str):
-
-    db = SessionLocal()
-
-    click = Click(
-        product=product,
-        link=link
-    )
-
-    db.add(click)
-    db.commit()
-    db.close()
-
+    print("CLICK:", product, link)
     return RedirectResponse(url=link)
-
-
-# ==============================
-# DASHBOARD
-# ==============================
-@app.get("/dashboard")
-def dashboard():
-
-    db = SessionLocal()
-
-    total = db.query(Click).count()
-    amazon = db.query(Click).filter(Click.link.contains("amazon")).count()
-    ebay = db.query(Click).filter(Click.link.contains("ebay")).count()
-
-    db.close()
-
-    return {
-        "total_clicks": total,
-        "amazon_clicks": amazon,
-        "ebay_clicks": ebay,
-    }
-
-
-# ==============================
-# PRICE ALERTS
-# ==============================
-@app.get("/set-alert")
-def set_alert(product: str, target_price: float):
-
-    db = SessionLocal()
-
-    alert = PriceAlert(
-        product=product,
-        target_price=target_price
-    )
-
-    db.add(alert)
-    db.commit()
-    db.close()
-
-    return {"status": "alert_set"}
-
-
-@app.get("/alerts")
-def get_alerts():
-
-    db = SessionLocal()
-    alerts = db.query(PriceAlert).all()
-
-    data = [
-        {
-            "product": a.product,
-            "target": a.target_price,
-            "created": a.created_at,
-        }
-        for a in alerts
-    ]
-
-    db.close()
-    return data
 
 
 # ==============================
 # ROOT
 # ==============================
+
 @app.get("/")
 def root():
-    return {"message": "MoolyaSetu AI backend running 🚀"}
+    return {"message": "MoolyaSetu backend running 🚀"}
