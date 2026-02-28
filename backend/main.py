@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 app = FastAPI()
 
 # ==============================
-# 🔥 POSTGRESQL DATABASE CONNECTION (FINAL FIX)
+# 🔥 POSTGRESQL DATABASE CONNECTION (FINAL SAFE FIX)
 # ==============================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -21,13 +21,22 @@ engine = None
 SessionLocal = None
 
 if DATABASE_URL:
-    # 🔥 FORCE correct dialect for ALL providers
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgres://", "postgresql+psycopg2://"
-    )
-    DATABASE_URL = DATABASE_URL.replace(
-        "postgresql://", "postgresql+psycopg2://"
-    )
+    DATABASE_URL = DATABASE_URL.strip()
+
+    # Fix legacy postgres URLs safely
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "postgres://",
+            "postgresql+psycopg2://",
+            1
+        )
+
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "postgresql://",
+            "postgresql+psycopg2://",
+            1
+        )
 
     print("FIXED DATABASE URL:", DATABASE_URL.split("@")[0])
 
@@ -150,7 +159,7 @@ def search_ebay(product: str):
 
 
 # ==============================
-# AMAZON SCRAPER (IMPROVED)
+# AMAZON SCRAPER
 # ==============================
 
 def extract_amazon_price(html: str):
@@ -233,7 +242,7 @@ def search_amazon(product: str):
 
 
 # ==============================
-# AI SCORING V3
+# AI SCORING
 # ==============================
 
 def calculate_score(item, min_price):
