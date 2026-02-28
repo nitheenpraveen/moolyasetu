@@ -13,7 +13,7 @@ app = FastAPI()
 # 🔥 POSTGRESQL DATABASE CONNECTION (FINAL SAFE FIX)
 # ==============================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL_FIXED") or os.getenv("DATABASE_URL")
 
 print("RAW DATABASE URL:", DATABASE_URL)
 
