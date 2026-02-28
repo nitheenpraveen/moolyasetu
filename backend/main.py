@@ -10,41 +10,48 @@ from sqlalchemy.orm import sessionmaker
 app = FastAPI()
 
 # ==============================
-# POSTGRESQL DATABASE CONNECTION
+# 🔥 POSTGRESQL DATABASE CONNECTION (FINAL FIX)
 # ==============================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-print("RAW DB URL:", DATABASE_URL)
+print("RAW DATABASE URL:", DATABASE_URL)
 
-if not DATABASE_URL:
-    print("⚠️ DATABASE_URL not set — running without DB (dev mode)")
-    engine = None
-    SessionLocal = None
+engine = None
+SessionLocal = None
+
+if DATABASE_URL:
+    # 🔥 FORCE correct dialect for ALL providers
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://", "postgresql+psycopg2://"
+    )
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://", "postgresql+psycopg2://"
+    )
+
+    print("FIXED DATABASE URL:", DATABASE_URL.split("@")[0])
+
+    try:
+        engine = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+        )
+
+        SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=engine,
+        )
+
+        print("✅ PostgreSQL connected")
+
+    except Exception as e:
+        print("❌ DB connection failed:", e)
+
 else:
-    # 🔥 Fix Heroku / legacy postgres URLs
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgres://", "postgresql+psycopg2://", 1
-        )
-
-    elif DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgresql://", "postgresql+psycopg2://", 1
-        )
-
-    print("FIXED DB URL:", DATABASE_URL.split("@")[0])
-
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-    )
-
-    SessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=engine
-    )
+    print("⚠️ Running without database (dev mode)")
 
 
 # ==============================
@@ -73,6 +80,10 @@ def get_proxy():
 # ==============================
 
 def get_ebay_token():
+    if not EBAY_CLIENT_ID:
+        print("⚠️ eBay keys missing")
+        return None
+
     try:
         auth = requests.auth.HTTPBasicAuth(
             EBAY_CLIENT_ID,
@@ -130,6 +141,7 @@ def search_ebay(product: str):
                 "link": item.get("itemWebUrl"),
             })
 
+        print("eBay results:", len(products))
         return products
 
     except Exception as e:
@@ -142,7 +154,6 @@ def search_ebay(product: str):
 # ==============================
 
 def extract_amazon_price(html: str):
-
     patterns = [
         r'"priceAmount":"([\d\.]+)"',
         r'"price":"([\d\.]+)"',
@@ -183,17 +194,16 @@ def search_amazon(product: str):
         html = response.text
 
         if "captcha" in html.lower():
-            print("Amazon CAPTCHA triggered")
+            print("🚨 Amazon CAPTCHA triggered")
             return []
 
         asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
 
-        print("ASINS found:", asins[:5])
+        print("Amazon ASINS:", asins[:5])
 
         products = []
 
         for asin in asins[:5]:
-
             product_url = f"https://www.amazon.in/dp/{asin}"
 
             page = requests.get(
@@ -214,6 +224,7 @@ def search_amazon(product: str):
                 "link": affiliate,
             })
 
+        print("Amazon results:", len(products))
         return products
 
     except Exception as e:
@@ -226,7 +237,6 @@ def search_amazon(product: str):
 # ==============================
 
 def calculate_score(item, min_price):
-
     price = item["price"]
 
     if min_price > 0:
@@ -236,11 +246,9 @@ def calculate_score(item, min_price):
         price_score = 5
 
     trust = 2 if item["site"] == "Amazon" else 1
-
     final = (price_score * 0.75) + (trust * 2.5)
 
     item["score"] = round(final * 10, 2)
-
     return item
 
 
@@ -251,12 +259,14 @@ def calculate_score(item, min_price):
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
 
-    print("COMPARE:", product)
+    print("\n🔥 COMPARE:", product)
 
     ebay = search_ebay(product)
     amazon = search_amazon(product)
 
     results = ebay + amazon
+
+    print("Total results:", len(results))
 
     if not results:
         return {"detail": "No products found"}
@@ -279,7 +289,7 @@ def compare_products(product: str = Query(...)):
 
 @app.get("/track-click")
 def track_click(link: str, product: str):
-    print("CLICK:", product, link)
+    print("CLICK:", product, link, datetime.utcnow())
     return RedirectResponse(url=link)
 
 
