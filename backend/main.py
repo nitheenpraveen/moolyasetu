@@ -7,20 +7,13 @@ from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
+
 # ==============================
 # POSTGRESQL DATABASE CONNECTION
 # ==============================
 
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    Float,
-    DateTime,
-    Text
-)
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -33,13 +26,8 @@ engine = create_engine(
     max_overflow=20,
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
 
 # ==============================
 # ENV VARIABLES
@@ -49,14 +37,17 @@ EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
 
+
 # ==============================
-# PROXY SYSTEM (Anti-block)
+# PROXY SYSTEM (future ready)
 # ==============================
 
 PROXIES = [None]
 
 def get_proxy():
-    return {"http": PROXIES[0], "https": PROXIES[0]} if PROXIES[0] else None
+    if PROXIES[0]:
+        return {"http": PROXIES[0], "https": PROXIES[0]}
+    return None
 
 
 # ==============================
@@ -70,17 +61,13 @@ def get_ebay_token():
             EBAY_CLIENT_SECRET
         )
 
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        data = {
-            "grant_type": "client_credentials",
-            "scope": "https://api.ebay.com/oauth/api_scope",
-        }
-
         response = requests.post(
             "https://api.ebay.com/identity/v1/oauth2/token",
-            headers=headers,
-            data=data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "grant_type": "client_credentials",
+                "scope": "https://api.ebay.com/oauth/api_scope",
+            },
             auth=auth,
             timeout=10,
         )
@@ -101,18 +88,15 @@ def search_ebay(product: str):
         token = get_ebay_token()
 
         if not token:
-            print("No eBay token")
             return []
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
-        }
 
         response = requests.get(
             "https://api.ebay.com/buy/browse/v1/item_summary/search",
-            headers=headers,
-            params={"q": product, "limit": 10},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-EBAY-C-MARKETPLACE-ID": "EBAY-IN",
+            },
+            params={"q": product, "limit": 8},
             timeout=10,
         )
 
@@ -136,31 +120,37 @@ def search_ebay(product: str):
 
 
 # ==============================
-# AMAZON SCRAPER
+# AMAZON SCRAPER (IMPROVED)
 # ==============================
 
 def extract_amazon_price(html: str):
+
     patterns = [
         r'"priceAmount":"([\d\.]+)"',
-        r'₹\s?([\d,]+)'
+        r'"price":"([\d\.]+)"',
+        r'₹\s?([\d,]+)',
     ]
 
     for p in patterns:
         m = re.search(p, html)
         if m:
             return float(m.group(1).replace(",", ""))
+
     return 0
 
 
 def search_amazon(product: str):
 
     try:
+        print("Amazon scraping:", product)
+
         url = f"https://www.amazon.in/s?k={product}"
 
         headers = {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "Chrome/120.0 Safari/537.36"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                " AppleWebKit/537.36 (KHTML, like Gecko)"
+                " Chrome/120.0 Safari/537.36"
             ),
             "Accept-Language": "en-IN,en;q=0.9",
         }
@@ -169,28 +159,30 @@ def search_amazon(product: str):
             url,
             headers=headers,
             proxies=get_proxy(),
-            timeout=10
+            timeout=15,
         )
 
-        if response.status_code != 200:
-            print("Amazon blocked or failed")
+        html = response.text
+
+        if "captcha" in html.lower():
+            print("Amazon CAPTCHA triggered")
             return []
 
-        html = response.text
         asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
 
-        print("DEBUG ASINS:", asins)
+        print("ASINS found:", asins[:5])
 
         products = []
 
         for asin in asins[:5]:
+
             product_url = f"https://www.amazon.in/dp/{asin}"
 
             page = requests.get(
                 product_url,
                 headers=headers,
                 proxies=get_proxy(),
-                timeout=10
+                timeout=15,
             )
 
             price = extract_amazon_price(page.text)
@@ -212,45 +204,47 @@ def search_amazon(product: str):
 
 
 # ==============================
-# AI SCORING
+# AI SCORING V3
 # ==============================
 
 def calculate_score(item, min_price):
+
     price = item["price"]
 
     if min_price > 0:
         ratio = price / min_price
-        price_score = max(0, 10 - (ratio - 1) * 5)
+        price_score = max(0, 10 - (ratio - 1) * 6)
     else:
         price_score = 5
 
     trust = 2 if item["site"] == "Amazon" else 1
-    final = (price_score * 0.7) + (trust * 3)
+
+    final = (price_score * 0.75) + (trust * 2.5)
 
     item["score"] = round(final * 10, 2)
+
     return item
 
 
 # ==============================
-# COMPARE PRODUCTS
+# COMPARE API
 # ==============================
 
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
 
+    print("COMPARE:", product)
+
     ebay = search_ebay(product)
     amazon = search_amazon(product)
-
-    print("DEBUG EBAY:", ebay)
-    print("DEBUG AMAZON:", amazon)
 
     results = ebay + amazon
 
     if not results:
-        return {"best_option": None, "all_results": []}
+        return {"detail": "No products found"}
 
-    valid = [r["price"] for r in results if r["price"] > 0]
-    min_price = min(valid) if valid else 1
+    valid_prices = [r["price"] for r in results if r["price"] > 0]
+    min_price = min(valid_prices) if valid_prices else 1
 
     scored = [calculate_score(r, min_price) for r in results]
     sorted_results = sorted(scored, key=lambda x: x["score"], reverse=True)
