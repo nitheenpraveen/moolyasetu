@@ -4,37 +4,47 @@ import requests
 from datetime import datetime
 from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
-
 
 # ==============================
 # POSTGRESQL DATABASE CONNECTION
 # ==============================
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+print("RAW DB URL:", DATABASE_URL)
+
 if not DATABASE_URL:
-    raise Exception("DATABASE_URL not set")
+    print("⚠️ DATABASE_URL not set — running without DB (dev mode)")
+    engine = None
+    SessionLocal = None
+else:
+    # 🔥 Fix Heroku / legacy postgres URLs
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "postgres://", "postgresql+psycopg2://", 1
+        )
 
-# ✅ Fix ALL postgres variants safely
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "postgresql://", "postgresql+psycopg2://", 1
+        )
 
-if DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+    print("FIXED DB URL:", DATABASE_URL.split("@")[0])
 
-print("Using DB:", DATABASE_URL.split("@")[0])  # debug print
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+    )
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine
+    )
 
 
 # ==============================
