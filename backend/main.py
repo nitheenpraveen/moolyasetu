@@ -9,11 +9,11 @@ from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
 
-# ==============================
-# 🔥 POSTGRESQL DATABASE CONNECTION (FINAL SAFE FIX)
-# ==============================
+# =====================================================
+# 🔥 DATABASE CONNECTION (HEROKU + SQLALCHEMY SAFE)
+# =====================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL_FIXED") or os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 print("RAW DATABASE URL:", DATABASE_URL)
 
@@ -21,31 +21,18 @@ engine = None
 SessionLocal = None
 
 if DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.strip()
+    # Fix legacy Heroku postgres:// issue
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://",
+        "postgresql+psycopg2://"
+    )
 
-    # Fix legacy postgres URLs safely
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgres://",
-            "postgresql+psycopg2://",
-            1
-        )
-
-    elif DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgresql://",
-            "postgresql+psycopg2://",
-            1
-        )
-
-    print("FIXED DATABASE URL:", DATABASE_URL.split("@")[0])
+    print("FINAL DATABASE URL:", DATABASE_URL.split("@")[0])
 
     try:
         engine = create_engine(
             DATABASE_URL,
             pool_pre_ping=True,
-            pool_size=5,
-            max_overflow=10,
         )
 
         SessionLocal = sessionmaker(
@@ -54,27 +41,27 @@ if DATABASE_URL:
             bind=engine,
         )
 
-        print("✅ PostgreSQL connected")
+        print("✅ PostgreSQL connected successfully")
 
     except Exception as e:
-        print("❌ DB connection failed:", e)
+        print("❌ Database connection failed:", str(e))
 
 else:
-    print("⚠️ Running without database (dev mode)")
+    print("⚠️ No DATABASE_URL found — running without DB")
 
 
-# ==============================
+# =====================================================
 # ENV VARIABLES
-# ==============================
+# =====================================================
 
 EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID")
 EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
 AMAZON_TAG = os.getenv("AMAZON_TAG", "moolyasetu-21")
 
 
-# ==============================
-# PROXY SYSTEM (future ready)
-# ==============================
+# =====================================================
+# PROXY SYSTEM (Future Ready)
+# =====================================================
 
 PROXIES = [None]
 
@@ -84,12 +71,12 @@ def get_proxy():
     return None
 
 
-# ==============================
+# =====================================================
 # EBAY TOKEN
-# ==============================
+# =====================================================
 
 def get_ebay_token():
-    if not EBAY_CLIENT_ID:
+    if not EBAY_CLIENT_ID or not EBAY_CLIENT_SECRET:
         print("⚠️ eBay keys missing")
         return None
 
@@ -113,13 +100,13 @@ def get_ebay_token():
         return response.json().get("access_token")
 
     except Exception as e:
-        print("EBAY TOKEN ERROR:", e)
+        print("EBAY TOKEN ERROR:", str(e))
         return None
 
 
-# ==============================
+# =====================================================
 # EBAY SEARCH
-# ==============================
+# =====================================================
 
 def search_ebay(product: str):
     try:
@@ -154,13 +141,13 @@ def search_ebay(product: str):
         return products
 
     except Exception as e:
-        print("EBAY ERROR:", e)
+        print("EBAY ERROR:", str(e))
         return []
 
 
-# ==============================
+# =====================================================
 # AMAZON SCRAPER
-# ==============================
+# =====================================================
 
 def extract_amazon_price(html: str):
     patterns = [
@@ -170,15 +157,14 @@ def extract_amazon_price(html: str):
     ]
 
     for p in patterns:
-        m = re.search(p, html)
-        if m:
-            return float(m.group(1).replace(",", ""))
+        match = re.search(p, html)
+        if match:
+            return float(match.group(1).replace(",", ""))
 
     return 0
 
 
 def search_amazon(product: str):
-
     try:
         print("Amazon scraping:", product)
 
@@ -186,9 +172,9 @@ def search_amazon(product: str):
 
         headers = {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-                " AppleWebKit/537.36 (KHTML, like Gecko)"
-                " Chrome/120.0 Safari/537.36"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36"
             ),
             "Accept-Language": "en-IN,en;q=0.9",
         }
@@ -208,8 +194,6 @@ def search_amazon(product: str):
 
         asins = list(set(re.findall(r'data-asin="([A-Z0-9]{10})"', html)))
 
-        print("Amazon ASINS:", asins[:5])
-
         products = []
 
         for asin in asins[:5]:
@@ -223,27 +207,26 @@ def search_amazon(product: str):
             )
 
             price = extract_amazon_price(page.text)
-
-            affiliate = f"{product_url}?tag={AMAZON_TAG}"
+            affiliate_link = f"{product_url}?tag={AMAZON_TAG}"
 
             products.append({
                 "site": "Amazon",
                 "title": f"Amazon Product {asin}",
                 "price": price,
-                "link": affiliate,
+                "link": affiliate_link,
             })
 
         print("Amazon results:", len(products))
         return products
 
     except Exception as e:
-        print("Amazon error:", e)
+        print("Amazon error:", str(e))
         return []
 
 
-# ==============================
+# =====================================================
 # AI SCORING
-# ==============================
+# =====================================================
 
 def calculate_score(item, min_price):
     price = item["price"]
@@ -255,27 +238,24 @@ def calculate_score(item, min_price):
         price_score = 5
 
     trust = 2 if item["site"] == "Amazon" else 1
-    final = (price_score * 0.75) + (trust * 2.5)
+    final_score = (price_score * 0.75) + (trust * 2.5)
 
-    item["score"] = round(final * 10, 2)
+    item["score"] = round(final_score * 10, 2)
     return item
 
 
-# ==============================
+# =====================================================
 # COMPARE API
-# ==============================
+# =====================================================
 
 @app.get("/compare")
 def compare_products(product: str = Query(...)):
+    print("🔥 Comparing:", product)
 
-    print("\n🔥 COMPARE:", product)
+    ebay_results = search_ebay(product)
+    amazon_results = search_amazon(product)
 
-    ebay = search_ebay(product)
-    amazon = search_amazon(product)
-
-    results = ebay + amazon
-
-    print("Total results:", len(results))
+    results = ebay_results + amazon_results
 
     if not results:
         return {"detail": "No products found"}
@@ -292,9 +272,9 @@ def compare_products(product: str = Query(...)):
     }
 
 
-# ==============================
+# =====================================================
 # CLICK TRACKING
-# ==============================
+# =====================================================
 
 @app.get("/track-click")
 def track_click(link: str, product: str):
@@ -302,9 +282,9 @@ def track_click(link: str, product: str):
     return RedirectResponse(url=link)
 
 
-# ==============================
+# =====================================================
 # ROOT
-# ==============================
+# =====================================================
 
 @app.get("/")
 def root():
