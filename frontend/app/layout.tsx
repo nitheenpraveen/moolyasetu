@@ -1,24 +1,21 @@
-import typeglobals.css";
+import type { Metadata } from "next";
+import "./globals.css";
 import Navbar from "@components/Navbar";
-import Footer from "../components/Footer";
-import from "../../components/ProductComparison ProductComparison";
-
+import Footer from "@components/Footer";
 
 export const metadata: Metadata = {
   title: "MoolyaSetu – Bridge of Value",
-  description { Metadata } from "next";
-import "./ Footer from "@components: "Compare deals instantly across Amazon, Flipkart, and eBay with MoolyaSetu.",
+  description: "Compare deals instantly across Amazon, Flipkart, and eBay with MoolyaSetu."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-
-      <body className="bg-gray-50 text-gray-900">  return (
+  return (
     <html lang="en">
+      <body className="bg-gray-50 text-gray-900">
         <Navbar />
         <main className="min-h-screen">{children}</main>
+        <Footer />
       </body>
-   
-        <Footer /> </html>
+    </html>
   );
 }
-
