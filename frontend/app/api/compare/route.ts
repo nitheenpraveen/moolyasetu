@@ -1,88 +1,63 @@
-import {/compare/route.ts NextResponse } from "next/server";
+import {export async function GET(req: Request "next/server";
 
- GET(req: Requestexport async functionParams } = new URL product = search) {
+) {
   const { search(req.url);
   constParams.get("product");
 
   if (!product) {
-    return NextResponse.json({ errorkart links (always: "Missing product query" }, { status: 400 });
+    return NextResponse.json({ error: "Missing product: 400 });
   }
 
-  // Amazon & Flip available)
-  const://www.amazon.in/s?k=${encodeURIComponentprocess.env.AMAZON_TAG}`;
-  const flipkartLink = `https://www.flipkart.com/search?q amazonLink = `https(product)}&tag=${=${encodeURIComponent(product)}`;
+ Params } = new URL product = search query" }, { status const amazonLink.in/s?k=${encode = `https://www.amazonURIComponent(product)}&tag=${process.env.AMAZON_TAG}`;
+  const flipkartLink = `https://www.flipkart.com/search?q=${encode const ebayRes =URIComponent(product)}`;
 
-  //
   let ebayData: any = null;
-  let eBay Browse API fetch(
-      `https://api.ebay.com/b ebayError: string | null = null;
+  let ebayError: string | null = null;
   try {
-    const ebayRes = await_summary/search?q=${encodeURIComponent(product)}&limit=5`,
-      {
-        headers: {
-          `Bearer ${process      }
-    );
-
-    if (!ebayResuy/browse/v1/item "Authorization":.env.EBAY_TOKEN}`,
-          "Content-Type": "application/json",
+    `https://api.eb await fetch(
+     ay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product {
+        headers)}&limit=5`,
+     ": `Bearer ${process.env.EBAY_TOKEN}`,
+: {
+          "Authorization-Type": "application          "Content/json",
         },
-.ok) {
-      ebayError = `eBay fetch.status}`;
-    }Data = await ebayRes.json();
+      }
+    );
+   ) {
+      ebayError      ebayData =();
     }
- failed: ${ebayRes else {
-      ebay  } catch (err: any) {
-    ebayError = `eBay fetch error: ${err.message}`;
-_results: any[] =  }
+  } catch if (!ebayRes.ok = `eBay fetch failed: ${ebayRes.status}`;
+    } else {
+ await ebayRes.json (err: any) {
+    fetch error: ${err.message}`;
+  ebayError = `eBay }
 
-  // Build results array
-  const all [];
+  const all_results site: "Amazon", price: null, title: any[] = [
+    {: `Search resultskart", price: null for ${product}`,, title: `Search results for ${product}`, link: flipkart },
+  ];
 
-  // Amazon
-  all_results.push({
-    site: "Amazon",
-    price: null, // price not available results for ${product via SiteStripe search
-    title: `Search}`,
-    link: amazonLink,
-    image: null,
-  });
-
-  //: "Flipkart",
-    for ${product}`,
- Flipkart
-  all_results.push({
-    site price: null,
-    title: `Search results    link: flipkart null,
-  });
-
-  // eBay
-  if (ebayData?.itemSummaries.itemSummaries.forLink,
-    image:) {
-    ebayDataEach((item: any) => {
-      all_results: "eBay",
-       ?.value,
-        title: item.title.itemWebUrl,
-        image: item.image.push({
-        site price: item.price,
-        link: item?.imageUrl || null,
+  if (ebayData?.itemSummData.itemSummaries) => {
+      all_results.push({
+        site: "eBay",
+        price: item.price?.value link: amazonLink, image: null },
+    { site: "FlipLink, image: nullaries) {
+    ebay.forEach((item: any,
+        title: item.title,
+        link: item.item: item.image?.imageUrl || null,
       });
     });
-_results.push({
-  } else if (ebay      site: "eBayError) {
-    all: null,
-      image",
-      price: null,
-      title: ebayError,
-      link option (lowest price: null,
-    });
- among those with numeric price)
+  } else if (ebayErrorWebUrl,
+        image) {
+    all_resultsBay", price: null.push({ site: "e, title: ebayError, link: null, image: null });
   }
 
-  // Pick best  let best_option = null;
-  const pricedResults =(pricedResults.length all_results.filter(r => r.price && !isNaN(Number(r.price)));
-  if  > 0) {
-    best_option = pricedResults.reduce((min, r) =>
-      Number(r.price) < Number(min.price) ? r : min
- NextResponse.json    best_option,
-  });
+  let best_option pricedResults = = null;
+  const !isNaN(Number(r(pricedResults.length > 0) {
+    best all_results.filter(r => r.price &&.price)));
+  if Results.reduce((min, r) =>
+      Number_option = priced(r.price) < Number(min.price) ? r : min
+    );
+  }
+
+  return({ product, best_option, all_results });
 }
