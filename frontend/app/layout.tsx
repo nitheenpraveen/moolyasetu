@@ -19,17 +19,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer /> </html>
   );
 }
- are eliminated.```
 
----
-
-## 🚀 Outcome
-- Syntax errors  
-- Imports are valid and clean.  
-- Build should succeed on Vercel once you replace---
-
-👉 Next step these files.  
-
- locally, **replace the entire contents commit, and push: open each file with the corrected versions above**, JSON** (with dummy.  
-
-Do you want me to also prepare a **sample API response product data like “iPhone 15”) so you can test NirnayaPage locally before deploying again?
