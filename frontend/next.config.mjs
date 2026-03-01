@@ -1,10 +1,13 @@
-// next.config.mjs
 import path from "path";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
+  experimental: {
+    appDir: path.resolve(__dirname, "frontend/app")
+  },
 
   webpack(config) {
     config.resolve.alias = {
