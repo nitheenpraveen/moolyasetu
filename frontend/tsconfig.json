@@ -14,13 +14,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "baseUrl": "./frontend",
-    "paths": {
-      "@components/*": ["components/*"],
-      "@app/*": ["app/*"],
-      "@lib/*": ["lib/*"],
-      "@utils/*": ["utils/*"]
-    }
+   "baseUrl": ".", "paths": { "@components/*": ["components/*"], "@app/*": ["app/*"], "@lib/*": ["lib/*"], "@utils/*": ["utils/*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
