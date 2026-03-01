@@ -2,126 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Colors and fonts */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --primary: #6b21a8; /* purple */
-  --secondary: #3b82f6; /* blue */
-  --accent: #10b981; /* green */
+/, body {
+  @apply background */
+html-gray-900 font-s;
+  padding: 0;
+ bg-gray-50 textans;
+  margin: 0h1, h2, h3, h4, h}
+
+/* Headings */
+5, h6 {
+  @apply font-bold text-gray-900;
 }
 
-/* Dark mode overrides */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --primary: #c084fc;
-    --secondary: #60a5fa;
-    --accent: #34d399;
-  }
+/* Paragraphs */
+p {
+  @apply leading-relaxed text-gray-700;
 }
 
-/* Gradient animation */
-@keyframes gradient-x {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradient-x 15s ease infinite;
+/* Links */
+a {
+  @apply text-blue-600 hover:text-blue-700 transition-200;
 }
 
-/* Fade-in animation */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in { animation: fade-in 1s ease forwards; }
-.animate-fade-in.delay-200 { animation-delay: 0.2s; }
-.animate-fade-in.delay-400 { animation-delay: 0.4s; }
-
-/* Slow bounce & spin animations for background shapes */
-@keyframes bounce-slow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-.animate-bounce-slow { animation: bounce-slow 10s ease-in-out infinite; }
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow { animation: spin-slow 60s linear infinite; }
-
-/* Base body styles */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  transition: background 0.3s, color 0.3s;
+/* Buttons-colors durationapply transition */
+button {
+  @-colors duration-200;
 }
 
-/* Buttons hover effects */
-.btn {
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-.btn:hover {
-  transform: translateY(-2px) scale(1.05);
+/* Tables */
+table {
+  @apply w-full border-collapse;
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
+th, td {
+  @-gray-200 px-4 pyapply border border-2;
+}
+
+/* Cards */
+.card {
+  @apply bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition;
+}
+
+/* Smooth transitions for hover effects */
+* {
+  transition: all 0.2s ease-in-out;
 }
