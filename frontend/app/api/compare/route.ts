@@ -14,24 +14,24 @@ export async function GET(req: Request) {
         name: "Amazon",
         url: `https://api.example.com/amazon?query=${encodeURIComponent(product)}`,
         headers: {
-          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY ?? "",
           "X-RapidAPI-Host": "amazon-api.p.rapidapi.com",
-        },
+        } as Record<string, string>,
       },
       {
         name: "Flipkart",
         url: `https://api.example.com/flipkart?query=${encodeURIComponent(product)}`,
         headers: {
-          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY ?? "",
           "X-RapidAPI-Host": "flipkart-api.p.rapidapi.com",
-        },
+        } as Record<string, string>,
       },
       {
         name: "eBay",
         url: `https://api.example.com/ebay?query=${encodeURIComponent(product)}`,
         headers: {
-          Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
-        },
+          Authorization: process.env.EBAY_OAUTH_TOKEN ?? "",
+        } as Record<string, string>,
       },
     ];
 
