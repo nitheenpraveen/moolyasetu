@@ -6,8 +6,13 @@ EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET")
 
 
 def get_token():
+    if not EBAY_CLIENT_ID or not EBAY_CLIENT_SECRET:
+        print("eBay credentials missing")
+        return None
+
     auth = requests.auth.HTTPBasicAuth(
-        EBAY_CLIENT_ID, EBAY_CLIENT_SECRET
+        EBAY_CLIENT_ID,
+        EBAY_CLIENT_SECRET
     )
 
     r = requests.post(
@@ -20,12 +25,15 @@ def get_token():
         }
     )
 
+    if r.status_code != 200:
+        print("Token error:", r.text)
+        return None
+
     return r.json().get("access_token")
 
 
 def search_ebay(product: str):
     token = get_token()
-
     if not token:
         return []
 
@@ -38,8 +46,11 @@ def search_ebay(product: str):
         params={"q": product, "limit": 10}
     )
 
-    data = r.json()
+    if r.status_code != 200:
+        print("Search error:", r.text)
+        return []
 
+    data = r.json()
     out = []
 
     for i in data.get("itemSummaries", []):
@@ -51,6 +62,6 @@ def search_ebay(product: str):
                 "link": i["itemWebUrl"]
             })
         except:
-            pass
+            continue
 
     return out
