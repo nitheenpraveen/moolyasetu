@@ -1,29 +1,32 @@
 {
-  "compilerOptions": {
+  " {
     "target": "esnext",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
+    "compilerOptions":.iterable", "esnextlib": ["dom", "dom"],
+    "allowJsLibCheck": true,
+    "strict": trueNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "skip,
+    "forceConsistentCasingInFile": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
+    "": true,
+    "isolatedModules": trueresolveJsonModule,
     "jsx": "preserve",
     "incremental": true,
 
-    // 👇 Absolute imports setup
-    "baseUrl": "./frontend",
+    // 👇 Absolute imports",
     "paths": {
-      "@components/*": ["components/*"],
-      "@app/*": ["app/*"],
+/*": ["components/*"],
+      "@app setup
+    "baseUrl": "./frontend      "@components/*": ["app/*"],
       "@lib/*": ["lib/*"],
-      "@utils/*": ["utils/*"]
+      "@  "include": ["nextts", "**/*.tsx"],
+utils/*": ["utils/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+-env.d.ts", "**/*.  "exclude": ["node---
+
+## ✨ Why this is clean
+- **No_modules"]
 }
