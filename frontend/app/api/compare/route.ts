@@ -9,44 +9,50 @@ export async function GET(req: Request) {
   }
 
   try {
-    const sources = [
-      {
-        name: "Amazon",
-        url: `https://api.example.com/amazon?query=${encodeURIComponent(product)}`,
-        headers: {
-          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY ?? "",
-          "X-RapidAPI-Host": "amazon-api.p.rapidapi.com",
-        } as Record<string, string>,
-      },
-      {
-        name: "Flipkart",
-        url: `https://api.example.com/flipkart?query=${encodeURIComponent(product)}`,
-        headers: {
-          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY ?? "",
-          "X-RapidAPI-Host": "flipkart-api.p.rapidapi.com",
-        } as Record<string, string>,
-      },
-      {
-        name: "eBay",
-        url: `https://api.example.com/ebay?query=${encodeURIComponent(product)}`,
-        headers: {
-          Authorization: process.env.EBAY_OAUTH_TOKEN ?? "",
-        } as Record<string, string>,
-      },
-    ];
+    const results: any[] = [];
 
-    const results = await Promise.all(
-      sources.map(async (source) => {
-        try {
-          const res = await fetch(source.url, { headers: source.headers });
-          if (!res.ok) throw new Error(`${source.name} API error`);
-          const data = await res.json();
-          return { source: source.name, data };
-        } catch (err) {
-          return { source: source.name, error: (err as Error).message };
+    // Amazon (SiteStripe link)
+    results.push({
+      source: "Amazon",
+      link: `https://www.amazon.in/s?k=${encodeURIComponent(product)}&tag=${process.env.AMAZON_ASSOC_TAG}`,
+    });
+
+    // Flipkart (basic search link)
+    results.push({
+      source: "Flipkart",
+      link: `https://www.flipkart.com/search?q=${encodeURIComponent(product)}`,
+    });
+
+    // eBay (Browse API)
+    try {
+      const tokenRes = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization:
+            "Basic " +
+            Buffer.from(
+              `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
+            ).toString("base64"),
+        },
+        body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+      });
+
+      const tokenData = await tokenRes.json();
+      const ebayToken = tokenData.access_token;
+
+      const ebayRes = await fetch(
+        `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product)}`,
+        {
+          headers: { Authorization: `Bearer ${ebayToken}` },
         }
-      })
-    );
+      );
+
+      const ebayData = await ebayRes.json();
+      results.push({ source: "eBay", data: ebayData });
+    } catch (err) {
+      results.push({ source: "eBay", error: (err as Error).message });
+    }
 
     return NextResponse.json({ product, results });
   } catch (error) {
