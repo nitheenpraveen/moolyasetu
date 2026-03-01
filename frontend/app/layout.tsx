@@ -1,6 +1,8 @@
 import typeglobals.css";
 import Navbar from "@components/Navbar";
-import/Footer";
+import Footer from "../components/Footer";
+import from "../../components/ProductComparison ProductComparison";
+
 
 export const metadata: Metadata = {
   title: "MoolyaSetu – Bridge of Value",
