@@ -1,64 +1,88 @@
-import { NextResponse } from "next/server";
+import {/compare/route.ts NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const product = searchParams.get("product");
+ GET(req: Requestexport async functionParams } = new URL product = search) {
+  const { search(req.url);
+  constParams.get("product");
 
   if (!product) {
-    return NextResponse.json({ error: "Product query is required" }, { status: 400 });
+    return NextResponse.json({ errorkart links (always: "Missing product query" }, { status: 400 });
   }
 
+  // Amazon & Flip available)
+  const://www.amazon.in/s?k=${encodeURIComponentprocess.env.AMAZON_TAG}`;
+  const flipkartLink = `https://www.flipkart.com/search?q amazonLink = `https(product)}&tag=${=${encodeURIComponent(product)}`;
+
+  //
+  let ebayData: any = null;
+  let eBay Browse API fetch(
+      `https://api.ebay.com/b ebayError: string | null = null;
   try {
-    const results: any[] = [];
-
-    // Amazon (SiteStripe affiliate link)
-    results.push({
-      source: "Amazon",
-      link: `https://www.amazon.in/s?k=${encodeURIComponent(product)}&tag=${process.env.AMAZON_TAG}`,
-    });
-
-    // Flipkart (search link)
-    results.push({
-      source: "Flipkart",
-      link: `https://www.flipkart.com/search?q=${encodeURIComponent(product)}`,
-    });
-
-    // eBay (Browse API)
-    try {
-      const tokenRes = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
-        method: "POST",
+    const ebayRes = await_summary/search?q=${encodeURIComponent(product)}&limit=5`,
+      {
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization:
-            "Basic " +
-            Buffer.from(
-              `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
-            ).toString("base64"),
-        },
-        body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
-      });
-
-      const tokenData = await tokenRes.json();
-      const ebayToken = tokenData.access_token;
-
-      const ebayRes = await fetch(
-        `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(product)}`,
-        {
-          headers: { Authorization: `Bearer ${ebayToken}` },
-        }
-      );
-
-      const ebayData = await ebayRes.json();
-      results.push({ source: "eBay", data: ebayData });
-    } catch (err) {
-      results.push({ source: "eBay", error: (err as Error).message });
-    }
-
-    return NextResponse.json({ product, results });
-  } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message || "Unknown error" },
-      { status: 500 }
+          `Bearer ${process      }
     );
+
+    if (!ebayResuy/browse/v1/item "Authorization":.env.EBAY_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+.ok) {
+      ebayError = `eBay fetch.status}`;
+    }Data = await ebayRes.json();
+    }
+ failed: ${ebayRes else {
+      ebay  } catch (err: any) {
+    ebayError = `eBay fetch error: ${err.message}`;
+_results: any[] =  }
+
+  // Build results array
+  const all [];
+
+  // Amazon
+  all_results.push({
+    site: "Amazon",
+    price: null, // price not available results for ${product via SiteStripe search
+    title: `Search}`,
+    link: amazonLink,
+    image: null,
+  });
+
+  //: "Flipkart",
+    for ${product}`,
+ Flipkart
+  all_results.push({
+    site price: null,
+    title: `Search results    link: flipkart null,
+  });
+
+  // eBay
+  if (ebayData?.itemSummaries.itemSummaries.forLink,
+    image:) {
+    ebayDataEach((item: any) => {
+      all_results: "eBay",
+       ?.value,
+        title: item.title.itemWebUrl,
+        image: item.image.push({
+        site price: item.price,
+        link: item?.imageUrl || null,
+      });
+    });
+_results.push({
+  } else if (ebay      site: "eBayError) {
+    all: null,
+      image",
+      price: null,
+      title: ebayError,
+      link option (lowest price: null,
+    });
+ among those with numeric price)
   }
+
+  // Pick best  let best_option = null;
+  const pricedResults =(pricedResults.length all_results.filter(r => r.price && !isNaN(Number(r.price)));
+  if  > 0) {
+    best_option = pricedResults.reduce((min, r) =>
+      Number(r.price) < Number(min.price) ? r : min
+ NextResponse.json    best_option,
+  });
 }
