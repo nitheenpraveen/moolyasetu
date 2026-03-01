@@ -11,13 +11,13 @@ export async function GET(req: Request) {
   try {
     const results: any[] = [];
 
-    // Amazon (SiteStripe link)
+    // Amazon (SiteStripe affiliate link)
     results.push({
       source: "Amazon",
-      link: `https://www.amazon.in/s?k=${encodeURIComponent(product)}&tag=${process.env.AMAZON_ASSOC_TAG}`,
+      link: `https://www.amazon.in/s?k=${encodeURIComponent(product)}&tag=${process.env.AMAZON_TAG}`,
     });
 
-    // Flipkart (basic search link)
+    // Flipkart (search link)
     results.push({
       source: "Flipkart",
       link: `https://www.flipkart.com/search?q=${encodeURIComponent(product)}`,
