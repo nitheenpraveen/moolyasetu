@@ -40,6 +40,23 @@ export default function MoolyaSetuLanding() {
         </Link>
       </section>
 
+      {/* Meaning Section */}
+      <section className="max-w-5xl mx-auto px-6 py-16 text-center">
+        <h2 className="text-2xl font-bold mb-6">What is MoolyaSetu?</h2>
+        <p className="text-lg text-gray-700 leading-relaxed mb-4">
+          <span className="font-semibold">MoolyaSetu</span> means “Bridge of Value.” 
+          It is designed to connect shoppers with the best deals across marketplaces, 
+          saving time, money, and effort. Our mission is to empower users with transparent 
+          comparisons and affiliate‑powered insights.
+        </p>
+        <p className="text-lg text-gray-700 leading-relaxed">
+          Unlike traditional comparison sites, MoolyaSetu is built to deliver exceptional 
+          value by combining affiliate deals from Amazon and Flipkart with live marketplace 
+          data from eBay. This ensures that your launch page is never empty, always trending, 
+          and always focused on helping you make smarter shopping decisions.
+        </p>
+      </section>
+
       {/* Trending Products */}
       <section className="max-w-6xl mx-auto px-6 py-16">
         <h2 className="text-2xl font-bold text-center mb-10">
