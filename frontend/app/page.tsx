@@ -172,6 +172,10 @@ export default function NirnayaPage() {
       <footer className="text-center text-sm text-gray-600 mt-12 border-t pt-4 w-full max-w-4xl">
         Data provided by eBay API. Prices may vary and are subject to change.
       </footer>
+      <Link href="/compare" className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">
+  Start Comparing
+</Link>
+
 
     </div>
   );
