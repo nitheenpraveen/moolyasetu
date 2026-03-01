@@ -1,68 +1,58 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-const BACKEND_URL =
-  process.env.BACKEND_URL ||
-  "https://moolyasetu-b1120af93c94.herokuapp.com";
-
-// 🔥 Retry logic for Heroku cold starts
-async function fetchBackend(url: string, retries = 2) {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const res = await fetch(url, { cache: "no-store" });
-      if (res.ok) return res;
-    } catch (err) {
-      console.log("Retrying backend...", i + 1);
-    }
-
-    // wait 2 seconds before retry
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  throw new Error("Backend unavailable");
-}
-
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const product = searchParams.get("product");
 
   if (!product) {
-    return NextResponse.json(
-      { error: "Product query is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Product query is required" }, { status: 400 });
   }
 
   try {
-    // 🔥 Call Heroku backend
-    const res = await fetchBackend(
-      `${BACKEND_URL}/compare?product=${encodeURIComponent(product)}`
+    const sources = [
+      {
+        name: "Amazon",
+        url: `https://api.example.com/amazon?query=${encodeURIComponent(product)}`,
+        headers: {
+          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+          "X-RapidAPI-Host": "amazon-api.p.rapidapi.com",
+        },
+      },
+      {
+        name: "Flipkart",
+        url: `https://api.example.com/flipkart?query=${encodeURIComponent(product)}`,
+        headers: {
+          "X-RapidAPI-Key": process.env.RAPIDAPI_KEY || "",
+          "X-RapidAPI-Host": "flipkart-api.p.rapidapi.com",
+        },
+      },
+      {
+        name: "eBay",
+        url: `https://api.example.com/ebay?query=${encodeURIComponent(product)}`,
+        headers: {
+          Authorization: `Bearer ${process.env.EBAY_OAUTH_TOKEN || ""}`,
+        },
+      },
+    ];
+
+    const results = await Promise.all(
+      sources.map(async (source) => {
+        try {
+          const res = await fetch(source.url, { headers: source.headers });
+          if (!res.ok) throw new Error(`${source.name} API error`);
+          const data = await res.json();
+          return { source: source.name, data };
+        } catch (err) {
+          return { source: source.name, error: (err as Error).message };
+        }
+      })
     );
 
-    const data = await res.json();
-
-    return NextResponse.json(data);
+    return NextResponse.json({ product, results });
   } catch (error) {
-    console.error("Backend down → fallback", error);
-
-    // 🔥 Safe fallback (no scraping from Vercel)
-    return NextResponse.json({
-      fallback: true,
-      results: [
-        {
-          source: "Flipkart",
-          price: "Check price",
-          url: `https://www.flipkart.com/search?q=${encodeURIComponent(
-            product
-          )}`,
-        },
-        {
-          source: "Myntra",
-          price: "Check price",
-          url: `https://www.myntra.com/search?q=${encodeURIComponent(
-            product
-          )}`,
-        },
-      ],
-    });
+    return NextResponse.json(
+      { error: (error as Error).message || "Unknown error" },
+      { status: 500 }
+    );
   }
 }
