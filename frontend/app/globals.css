@@ -2,48 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/, body {
-  @apply background */
-html-gray-900 font-s;
+/* Custom global styles */
+html, body {
+  height: 100%;
+  margin: 0;
   padding: 0;
- bg-gray-50 textans;
-  margin: 0h1, h2, h3, h4, h}
-
-/* Headings */
-5, h6 {
-  @apply font-bold text-gray-900;
 }
 
-/* Paragraphs */
-p {
-  @apply leading-relaxed text-gray-700;
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
 }
 
-/* Links */
+/* Example utility overrides */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold text-gray-800;
+}
+
 a {
-  @apply text-blue-600 hover:text-blue-700 transition-200;
+  @apply text-blue-600 hover:text-blue-800 transition-colors;
 }
 
-/* Buttons-colors durationapply transition */
 button {
-  @-colors duration-200;
-}
-
-/* Tables */
-table {
-  @apply w-full border-collapse;
-}
-
-th, td {
-  @-gray-200 px-4 pyapply border border-2;
-}
-
-/* Cards */
-.card {
-  @apply bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition;
-}
-
-/* Smooth transitions for hover effects */
-* {
-  transition: all 0.2s ease-in-out;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500;
 }
