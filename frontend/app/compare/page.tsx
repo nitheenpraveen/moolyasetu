@@ -1,28 +1,26 @@
-"use client";
+"use React, { useStateimport ProductComparison from "@components/ProductComparison";
 
-import/app/compare/page React, { useState } from "react";
- from "@componentsimport ProductComparison function Compare/ProductComparison";
-
-export defaultPage() {
+export default } from "react";
+Page() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loadingState(false);
-  const [error, setError] = useState<string | null>, setLoading] = use(null);
+ function Compare, setResults] = useState<any[]>([]);
+, setLoading] = use [error, setError  const [results  const [loadingState(false);
+  const] = useState<string | null>(null);
 
-  const;
-    setLoading handleSearch = async () => {
+  const handleSearch = async;
+    setLoading () => {
     if (!query.trim()) return(true);
-    setError(null);
+    setError = await fetch(`/(null);
 
     try {
-      const res = await fetch(`/api/compare?product=${encodeURIComponent(query)}`);
+      const resapi/compare?product=${encodeURIComponent(query)}`);
       if (!res.ok) {
- Error(`API error        throw new: ${res.status}`);
+        throw new Error(`API error: ${res.status}`);
       }
-      const data = await resResults(data.results (err: any) {
-      setError(err.message.json();
+      const.json();
       set || []);
-    } catch);
+    } catch (err: any) {
+      data = await resResults(data.results setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -30,44 +28,36 @@ export defaultPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">
-        Compare Search Bar */}
- Products
-      </h1>
-
-      {/*
+      <h1 className="text-3xl font-bold text-center mb-8">Compare Products
         <input
-      <div className="flex justify-center mb-8">text"
-          value={query}
-          onChange={(e) =>          type=" setQuery(e.target.value)}
+</h1>
+
+      <div className="flex justify-center mb-8">          type="text"
+          value onChange={(e) =>={query}
+          setQuery(e.target          className.value)}
           placeholder="Enter product name..."
-          className="w-full sm:w-2/3 px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring          onClick          className-blue-500"
-        />
-        <button
-={handleSearch}
-="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700"
+="w-full sm:w-2/:ring-2 focus:ring3 px-4 py-2 border-blue-500"
+        rounded-l focus:outline-none focus={handleSearch}
+-700"
         >
           Search
         </button>
       </div>
 
-      {/* Loading / Error / Results */}
-      {loading && (
-        <p className="text-center text-gray-600"></p>
-      )}
-     Loading deals... {error && (
-        <p className="text-center text-red-600">{error}</p>
-      )}
-      {!loading && !error && results.length > 0 && (
+      />
+        <button
+          onClick          className="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue {loading && <p className="text-center text-gray-600">Loading deals...</p>}
+      {error && <p className="text-center text-red-600">{error}</p>}
+      {!loading && !error && results.length <ProductComparison product={query} results={results} /> > 0 && (
+       u provides deal comparisons using affiliate APIs.
+        Prices and availability## 🪜 Fix Layout.tsx`)
 
+Replace the
       )}
 
-             <ProductComparison product={query} results={results} /> {/* Disclaimer */}
- links and marketplace      <p className="text-xs text-gray-500 mt-12 text-center">
-        MoolyaSetu provides deal comparisons using affiliate      </p>
-    </div> APIs.
-        Prices and availability are subject to change without notice.
-## ✨ Features
-- **
+      <p className="text-xs text-gray-500 mt-12 text-center">
+        MoolyaSet links and marketplace are subject to change without notice.
+      </p>
+    </div>
   );
 }
