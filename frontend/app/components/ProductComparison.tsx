@@ -1,81 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 
-interface Product {
-  site: string;
-  title: string;
-  price: number;
-  link: string;
-  confidence: number;
-  forecast: string;
+interface ComparisonResult {
+  source: string;
+  link?: string;
+  data?: any;
+  error?: string;
 }
 
-export default function ProductComparison() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Product[]>([]);
-  const [bestOption, setBestOption] = useState<Product | null>(null);
+interface Props {
+  product: string;
+  results: ComparisonResult[];
+}
 
-  const handleSearch = async () => {
-    const res = await fetch(`/api/compare?product=${query}`);
-    const data = await res.json();
-    setResults(data.all_results);
-    setBestOption(data.best_option);
-  };
-
+export default function ProductComparison({ product, results }: Props) {
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto mt-10 px-6">
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        Best Deals for {product}
+      </h2>
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search smarter. Buy safer."
-        className="border p-3 w-full rounded"
-      />
+      <div className="overflow-x-auto shadow-md rounded-lg">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-700">
+                Marketplace
+              </th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-700">
+                Deal / Link
+              </th>
+              <th className="py-3 px-4 text-left text-sm font-semibold text-gray-700">
+                Price / Info
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((result, idx) => (
+              <tr key={idx} className="border-t hover:bg-gray-50">
+                <td className="py-3 px-4 font-medium text-gray-800">
+                  {result.source}
+                </td>
+                <td className="py-3 px-4">
+                  {result.link ? (
+                    <a
+                      href={result.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View on {result.source}
+                    </a>
+                  ) : result.error ? (
+                    <span className="text-red-500">{result.error}</span>
+                  ) : (
+                    <span className="text-gray-500">No link available</span>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-gray-700">
+                  {result.data?.itemSummaries ? (
+                    <div className="space-y-2">
+                      {result.data.itemSummaries.slice(0, 3).map((item: any, i: number) => (
+                        <div key={i}>
+                          <p className="font-semibold">{item.title}</p>
+                          <p className="text-sm text-gray-600">
+                            {item.price?.value} {item.price?.currency}
+                          </p>
+                          <a
+                            href={item.itemWebUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            View on eBay
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <button
-        onClick={handleSearch}
-        className="bg-blue-600 text-white p-3 mt-3 rounded w-full"
-      >
-        Compare Prices
-      </button>
-
-      {bestOption && (
-        <div className="bg-green-100 p-4 mt-6 rounded">
-          <h2 className="text-xl font-bold mb-2">🔥 Best Trusted Deal</h2>
-          <p>{bestOption.title}</p>
-          <p className="font-semibold">₹{bestOption.price}</p>
-          <p className="text-green-700 font-semibold">
-            Confidence: {bestOption.confidence}%
-          </p>
-          <p className="text-orange-600">{bestOption.forecast}</p>
-
-          <a
-            href={bestOption.link}
-            target="_blank"
-            className="text-blue-600 underline"
-          >
-            Buy Safely
-          </a>
-        </div>
-      )}
-
-      {results.map((r, i) => (
-        <div key={i} className="border p-4 mt-4 rounded">
-          <p className="font-medium">{r.title}</p>
-          <p>₹{r.price}</p>
-          <p className="text-green-700">Trust: {r.confidence}%</p>
-          <p className="text-orange-600">{r.forecast}</p>
-
-          <a
-            href={r.link}
-            target="_blank"
-            className="text-blue-600 underline"
-          >
-            View Deal
-          </a>
-        </div>
-      ))}
+      {/* Disclaimer */}
+      <p className="text-xs text-gray-500 mt-4 text-center">
+        Prices and availability are subject to change without notice. Affiliate links may earn commissions.
+      </p>
     </div>
   );
 }
