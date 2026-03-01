@@ -1,20 +1,20 @@
-import } from "next";
-.css";
-import Navbar from "@components Footer from "@components type { Metadataimport "./globals/Navbar";
-import/Footer";
 
-export Metadata = {
-  title: "MoolyaSetu – Bridge instantly across const metadata: of Value",
-  description: "Compare deals, and eBay with M Amazon, FlipkartoolyaSetu.",
-};
+import type { Metadataimport "./globals from "@components.css";
+import Navbar/Footer";
 
-export default function RootLayout({
+export const metadata: Metadata = {
+  title: "MoolyaSetu – Bridge of Value",
+  description/Navbar";
+import Footer from "@components Amazon, Flipkart: "Compare deals instantly across, and eBay with M RootLayout({
   children,
 }: {
-  children;
+  children: React.ReactNodeoolyaSetu.",
+};
+
+export default function;
 }) {
   return (
-: React.ReactNode    <html lang="en">
+    <html lang="en">
       <body className="bg-gray-50 text-gray-900">
         <Navbar />
         <main className="min-h-screen">{children}</main>
