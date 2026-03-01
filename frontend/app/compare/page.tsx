@@ -3,47 +3,47 @@
 import React, { useState } from "react";
 import ProductComparison from "@components/ProductComparison";
 
-export defaultPage() {
-  const [query, setQuery function Compare] = useState("");
-  const [resultsState<any[]>([]);
-  const [loading, setLoading] = use, setResults] = useState(false);
-  const handleSearch = async [error, setError] = useState<string | null>(null);
+export default function ComparePage() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const () => {
-    if (!query.trim()) return {
-      const res;
+  const handleSearch = async () => {
+    if (!query.trim()) return;
     setLoading(true);
     setError(null);
 
-    try = await fetch(`/api/compare?product=${encodeURIComponent if (!res.ok) throw(query)}`);
-      new Error(`API error      const data: ${res.status}`);
-();
-      setResults = await res.json(data.all_results (err: any) {
-      {
+    try {
+      const res = await fetch(`/api/compare?product=${encodeURIComponent(query)}`);
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      setResults(data.all_results || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
-  || []);
-    } catch setError(err.message);
-    } finally };
+  };
 
   return (
-
-      <h1 className="text-3xl font-bold text-center mb-8">    <div className="max-w-5xl mx-auto px-6 py-12">Compare Products</h1>
+    <div className="max-w-5xl mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold text-center mb-8">Compare Products</h1>
 
       <div className="flex justify-center mb-8">
         <input
-={query}
+          type="text"
+          value={query}
           onChange={(e) => setQuery(e.target.value)}
-                   type="text"
-          value placeholder="Enter product name..."
-          className="w-full sm:w-2/ rounded-l focus3 px-4 py-2 border:outline-none focus:ring-2 focus:ring-blue-500"
-                 onClick={handleSearch}
- />
+          placeholder="Enter product name..."
+          className="w-full sm:w-2/3 px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <button
-          className          Search
-        </button>="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700"
+          onClick={handleSearch}
+          className="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700"
         >
-
+          Search
+        </button>
       </div>
 
       {loading && <p className="text-center text-gray-600">Loading deals...</p>}
