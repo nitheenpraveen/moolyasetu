@@ -3,18 +3,12 @@ import path from "path";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
 
-  webpack(config) {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@components": path.resolve(__dirname, "components"),
-      "@app": path.resolve(__dirname, "app"),
-      "@lib": path.resolve(__dirname, "lib"),
-      "@utils": path.resolve(__dirname, "utils")
-    };
-    return config;
-  }
+  // Turbopack config (empty object silences the error if you don't need custom rules)
+  turbopack: {},
+
+  // If you really need aliases, rely on tsconfig.json paths instead.
+  // Turbopack automatically respects tsconfig.json "paths".
 };
 
 export default nextConfig;
