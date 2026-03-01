@@ -1,26 +1,26 @@
-"use React, { useStateimport ProductComparison from "@components/ProductComparison";
+"use React, { useState } from "react";
+ client";
 
-export default } from "react";
-Page() {
-  const [query, setQuery] = useState("");
- function Compare, setResults] = useState<any[]>([]);
-, setLoading] = use [error, setError  const [results  const [loadingState(false);
-  const] = useState<string | null>(null);
+import/ProductComparison";
 
-  const handleSearch = async;
-    setLoading () => {
-    if (!query.trim()) return(true);
-    setError = await fetch(`/(null);
+export defaultPage() {
+  const [query, setQueryimport ProductComparison from "@components  const [results function CompareState<any[]>([]);
+  const [loading, setLoading] = use] = useState("");
+State(false);
+  const, setResults] = use [error, setError(null);
 
-    try {
+    try] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    setError {
       const resapi/compare?product=${encodeURIComponent(query)}`);
-      if (!res.ok) {
-        throw new Error(`API error: ${res.status}`);
-      }
-      const.json();
-      set || []);
+      = await fetch(`/ if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      setResults(data.all_results || []);
     } catch (err: any) {
-      data = await resResults(data.results setError(err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -28,36 +28,29 @@ Page() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">Compare Products
+      <h1 className="text-3xl font-bold text-center mb-8">
         <input
-</h1>
+Compare Products</h1>
 
       <div className="flex justify-center mb-8">          type="text"
-          value onChange={(e) =>={query}
-          setQuery(e.target          className.value)}
-          placeholder="Enter product name..."
-="w-full sm:w-2/:ring-2 focus:ring3 px-4 py-2 border-blue-500"
-        rounded-l focus:outline-none focus={handleSearch}
--700"
+          value={query}
+          onChange={(e) => setQuery(e.target placeholder="Enter.value)}
+          product name..."
+          className3 px-4 py-2 border="w-full sm:w-2/:ring-2 focus:ring={handleSearch}
+ rounded-l focus:outline-none focus-blue-500"
+        />
+        <button
+          onClick          className="px-6 py-2 bg-blue-r hover:bg-blue-600 text-white rounded-700"
         >
           Search
-        </button>
+        </button> {loading && <p className="text-center text-gray-600">
       </div>
 
-      />
-        <button
-          onClick          className="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue {loading && <p className="text-center text-gray-600">Loading deals...</p>}
-      {error && <p className="text-center text-red-600">{error}</p>}
-      {!loading && !error && results.length <ProductComparison product={query} results={results} /> > 0 && (
-       u provides deal comparisons using affiliate APIs.
-        Prices and availability## 🪜 Fix Layout.tsx`)
-
-Replace the
+     Loading deals...</p>}
+      {error && <p className="text-center text-red-600"> {!loading && !error{error}</p>}
+      > 0 && (
+        && results.length
       )}
-
-      <p className="text-xs text-gray-500 mt-12 text-center">
-        MoolyaSet links and marketplace are subject to change without notice.
-      </p>
-    </div>
+    </div> <ProductComparison product={query} results={results} />
   );
 }
