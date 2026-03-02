@@ -1,28 +1,27 @@
-"use client";
+import Link from 'next/link';
 
-export default function Footer() {
+export function Footer() {
   return (
-    <footer className="bg-gray-900 text-white mt-12">
-      <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row justify-between items-center">
+    <footer className="border-t border-slate-200 bg-white py-12 mt-20">
+      <div className="max-w-7xl mx-auto px-6 text-center">
+        <div className="mb-6">
+          <span className="text-2xl font-black text-slate-900">
+            Moolya<span className="text-blue-600">Setu</span>
+          </span>
+        </div>
         
-        {/* Links */}
-        <div className="flex flex-col sm:flex-row gap-6 mb-4 sm:mb-0">
-          <a href="/privacy" className="hover:text-blue-400">Privacy Policy</a>
-          <a href="/terms" className="hover:text-blue-400">Terms of Service</a>
-          <a href="/contact" className="hover:text-blue-400">Contact</a>
+        <div className="flex justify-center gap-8 mb-8 text-sm font-medium text-slate-500">
+          <Link href="/about" className="hover:text-blue-600 transition-colors">About</Link>
+          <Link href="/disclosure" className="hover:text-blue-600 transition-colors">Disclosure</Link>
+          <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
         </div>
 
-        {/* Copyright */}
-        <p className="text-sm text-gray-400">
-          © {new Date().getFullYear()} MoolyaSetu. All rights reserved.
+        <p className="max-w-3xl mx-auto text-xs text-slate-400 leading-relaxed">
+          Disclaimer: Product prices and availability are accurate as of the date/time indicated and are subject to change. 
+          Any price and availability information displayed on the relevant merchant site at the time of purchase will apply 
+          to the purchase of this product.
         </p>
-      </div>
-
-      {/* Disclaimers */}
-      <div className="max-w-7xl mx-auto px-6 pb-6 text-center text-xs text-gray-400 space-y-2">
-        <p>As an Amazon Associate I earn from qualifying purchases.</p>
-        <p>Flipkart and eBay links are provided for comparison purposes. Prices and availability are subject to change without notice.</p>
-        <p>MoolyaSetu provides deal comparisons using affiliate links and marketplace APIs. We do not guarantee accuracy of third‑party data.</p>
       </div>
     </footer>
   );
