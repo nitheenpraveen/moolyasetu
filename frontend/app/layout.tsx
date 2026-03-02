@@ -1,25 +1,22 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: "MoolyaSetu | The Bridge of Value",
-  description: "AI-powered shopping comparison for the best deals.",
+  title: {
+    default: "MoolyaSetu | AI-Smart Shopping Comparison",
+    template: "%s | MoolyaSetu"
+  },
+  description: "Bridge the gap to better value. Compare prices across Amazon, Flipkart, and eBay with our AI-powered smart engine.",
+  openGraph: {
+    title: "MoolyaSetu",
+    description: "The smartest way to find the best deals.",
+    url: "https://moolyasetu.com",
+    siteName: "MoolyaSetu",
+    images: [
+      {
+        url: "/og-image.png", // Create a simple logo image in /public
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
 };
-
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} antialiased bg-slate-50 text-slate-900`}>
-        <div className="min-h-screen flex flex-col">
-          {/* We will build the Navbar and Footer next */}
-          <main className="flex-grow">{children}</main>
-        </div>
-      </body>
-    </html>
-  );
-}
