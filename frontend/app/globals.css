@@ -2,24 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom global styles */
+/* Global styles */
 html, body {
-  height: 100%;
+  @apply bg-gray-50 text-gray-900;
+  font-family: system-ui, sans-serif;
   margin: 0;
   padding: 0;
 }
 
-/* ✅ Correct */ body { @apply bg-gray-50; }
-
-/* Example utility overrides */
-h1, h2, h3, h4, h5, h6 {
-  @apply font-bold text-gray-800;
-}
-
+/* Example link styling */
 a {
-  @apply text-blue-600 hover:text-blue-800 transition-colors;
-}
-
-button {
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500;
+  @apply text-blue-600 hover:text-blue-800;
 }
