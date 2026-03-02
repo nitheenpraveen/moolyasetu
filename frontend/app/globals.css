@@ -1,15 +1,22 @@
+/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles */
-html, body {
-  @apply bg-gray-50 text-gray-900;
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 0;
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
 }
 
-a {
-  @apply text-blue-600 hover:text-blue-800;
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white px-6 py-3 rounded-xl font-bold 
+           hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] 
+           transition-all duration-200 shadow-lg shadow-blue-200;
+  }
 }
