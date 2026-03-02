@@ -1,6 +1,7 @@
-module.exports = {
+// Use proper ESM syntax
+export default {
   plugins: {
     tailwindcss: {},
-    autoprefixer: {}
-  }
+    autoprefixer: {},
+  },
 };
