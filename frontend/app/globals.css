@@ -10,7 +10,6 @@ html, body {
   padding: 0;
 }
 
-/* Example link styling */
 a {
   @apply text-blue-600 hover:text-blue-800;
 }
