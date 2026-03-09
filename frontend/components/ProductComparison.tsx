@@ -2,89 +2,72 @@
 
 import React from "react";
 
-interface Comparison?: string;
-  data?: any;
-  error?: string | null;
-ComparisonProps {
-, production‑ready **final `ProductComparison;
-  results: Comparison TailwindCSS, handles Amazon + Flipkart shows eBay data or errors.
-
----
-
-Result {
+type Product = {
+  title: string;
+  price: number;
+  image: string;
+  link: string;
   source: string;
-  link}
+};
 
-interface Product  product: stringResult[];
+interface ProductComparisonProps {
+  data?: Product[];
+  error?: string | null;
 }
 
-export default function ProductComparison({ product, results }: ProductComparisonProps) {
+export default function ProductComparison({ data, error }: ProductComparisonProps) {
+
+  if (error) {
+    return (
+      <p className="text-red-500 text-center mt-4">
+        {error}
+      </p>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <p className="text-gray-500 text-center mt-4">
+        No products found.
+      </p>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto mt-10">
-      <h2 className="text-2xl font-bold text-center mb-6">
-        Comparison Results for "{product}"
-      </h2>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      {data.map((product, index) => (
+        <div
+          key={index}
+          className="border rounded-lg p-4 shadow-sm hover:shadow-md transition"
+        >
+          <img
+            src={product.image}
+            alt={product.title}
+            className="w-full h-40 object-cover mb-3 rounded"
+          />
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-lg shadow-md">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left font-semibold">Marketplace</th>
-              <th className="px-4 py-2 text-left font-semibold">Details</th>
-            </tr>
-          {results.map((result </thead>
-          <tbody>
-           , idx) => (
-             
-                <tr key={idx} className="border-t hover:bg-gray-50"> <td className="px-4 py-3 font-medium">{result.source}</td>
-                 
-                <td className="px-4 py-3"> {result.link && href={result.link (
-                    target="_blank"
-                      rel="noopener noreferrer className="text.source}
-                    </a>
-                  )}
+          <h3 className="text-sm font-semibold mb-2 line-clamp-2">
+            {product.title}
+          </h3>
 
-                  result.source === <a
-                     }
-                     "
-                     -blue-600 hover:underline"
-                    >
-                      View on {result {result.data && "eBay" && (
-                    <div className="space-y-2">
-                     Summaries?.map((item {result.data.item) => (
-                       : any, i: number <div key={i} className="p-2 border rounded">
-                          <p className="font-semibold">
-                         {item.title}</p> <p className="text-sm text-gray-600">
-                            {item.price?.value} {item.price?.currency}
-                          <a
-                            </p>
-                          href={item.item                           WebUrl}
-                            target="_blank"
-"
-                            rel="noopener noreferrer className="text-blue-600 hover:underline text-sm"
-                          </a>
-                        >
-                            View on eBay
-                          </div>
-                      {result.error &&{result.error}</p> ))}
-                    </div>
-                  )}
+          <p className="text-green-600 font-bold text-lg mb-2">
+            ₹{product.price}
+          </p>
 
-                  (
-                    <p className="text-red-600 text-sm">
-                  </td>
-              )}
-                </tr>
-           
-      </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Source: {product.source}
+          </p>
 
+          <a
+            href={product.link}
+            target="_blank"
+            rel="nofollow noreferrer"
+            className="block text-center bg-black text-white py-2 rounded hover:bg-gray-800"
+          >
+            View Deal
+          </a>
+        </div>
       ))}
-          </tbody>
-        </table> {/* Disclaimer */}
-      <p className="text-xs text-gray-500 mt-6 text-center">
-        MoolyaSet are subject to changeu provides deal comparisons      </p>
-    </div> using affiliate links and marketplace APIs.
-        Prices and availability without notice.
-
+    </div>
   );
 }
