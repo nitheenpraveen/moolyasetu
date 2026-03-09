@@ -11,12 +11,17 @@ export default function ComparePage() {
 
   const handleSearch = async () => {
     if (!query.trim()) return;
+
     setLoading(true);
     setError(null);
 
     try {
       const res = await fetch(`/api/compare?product=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
       const data = await res.json();
       setResults(data.all_results || []);
     } catch (err: any) {
@@ -28,7 +33,9 @@ export default function ComparePage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">Compare Products</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">
+        Compare Products
+      </h1>
 
       <div className="flex justify-center mb-8">
         <input
@@ -38,6 +45,7 @@ export default function ComparePage() {
           placeholder="Enter product name..."
           className="w-full sm:w-2/3 px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
         <button
           onClick={handleSearch}
           className="px-6 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700"
@@ -46,10 +54,16 @@ export default function ComparePage() {
         </button>
       </div>
 
-      {loading && <p className="text-center text-gray-600">Loading deals...</p>}
-      {error && <p className="text-center text-red-600">{error}</p>}
+      {loading && (
+        <p className="text-center text-gray-600">Loading deals...</p>
+      )}
+
+      {error && (
+        <p className="text-center text-red-600">{error}</p>
+      )}
+
       {!loading && !error && results.length > 0 && (
-        <ProductComparison product={query} results={results} />
+       <ProductComparison data={results} />
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Zap, TrendingUp, ShieldCheck, Sparkles } from 'lucide-react';
 import { fetchDeals } from './actions';
-import { ProductCard } from '@/components/ProductCard';
+import ProductCard from "@/components/ProductCard";
 
 export default function MoolyaSetu() {
   const [query, setQuery] = useState("");
