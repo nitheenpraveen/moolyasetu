@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import ProductComparison from "@components/ProductComparison";
+import ProductComparison from "@/components/ProductComparison";
 
 export default function ComparePage() {
   const [query, setQuery] = useState("");
