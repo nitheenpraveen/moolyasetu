@@ -1,17 +1,16 @@
 'use server';
 
-import { scrapeFlipkart } from "@/lib/scraper";
+import { scrapeAmazon } from "@/lib/scraper";
 import { getSmartRank } from "@/lib/utils";
 
 export async function fetchDeals(query: string) {
   if (!query) return { success: false, data: [] };
 
   try {
-    // Fetch real data from Flipkart
-    const flipkartData = await scrapeFlipkart(query);
+    // Fetch real data from Amazon
+    const amazonData = await scrapeAmazon(query);
     
-    // In the future, we add: const amazonData = await scrapeAmazon(query);
-    const combinedData = [...flipkartData];
+    const combinedData = [...amazonData];
 
     // AI Smart Ranking
     const smartResults = getSmartRank(combinedData as any);
